@@ -1,0 +1,291 @@
+openapi: 3.1.1
+info:
+  title: Bunshin API
+  version: 1.0.0
+  description: |
+    **Bunshin API**
+  contact:
+    name: Bunshin Team
+    email: support@bunshin.app
+    url: https://bunshin.app
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://bunshin.app/terms
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+servers:
+  - url: https://api.bunshin.app
+    description: Production API server
+paths:
+  /telemetry/check-updates:
+    get:
+      operationId: checkUpdates
+      summary: Check for updates
+      description: Check for available application updates. Returns platform-specific update information based on the target parameter.
+      security: []
+      parameters:
+        - name: current_version
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Current application version
+        - name: target
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - darwin-aarch64
+              - darwin-x86_64
+              - windows-x86_64
+              - linux-x86_64
+          description: Target platform identifier
+      responses:
+        '200':
+          description: Update available - returns platform-specific update information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateInfo'
+        '204':
+          description: No update available - client is on the latest version
+  /telemetry/crash-reports:
+    post:
+      operationId: submitCrashReport
+      summary: Submit crash report
+      description: Submit application crash reports for monitoring and debugging
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrashReportRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrashReportResponse'
+  /telemetry/update:
+    post:
+      operationId: publishUpdate
+      summary: Publish new version
+      description: Publish a new application version. Requires admin privileges.
+      security:
+        - AdminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - version
+                - notes
+                - darwin_url
+                - darwin_sig
+                - windows_url
+                - windows_sig
+              properties:
+                version:
+                  type: string
+                  description: Version number of the new release
+                notes:
+                  type: string
+                  description: Release notes for the update
+                darwin_url:
+                  type: string
+                  format: uri
+                  description: Download URL for Darwin/macOS package
+                darwin_sig:
+                  type: string
+                  description: Digital signature for Darwin/macOS package
+                windows_url:
+                  type: string
+                  format: uri
+                  description: Download URL for Windows package
+                windows_sig:
+                  type: string
+                  description: Digital signature for Windows package
+      responses:
+        '200':
+          description: Update published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateInfo'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: User authentication token
+    AdminAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Admin authentication token for privileged operations
+  schemas:
+    UpdateInfo:
+      type: object
+      required:
+        - version
+        - url
+        - signature
+        - notes
+        - pub_date
+      properties:
+        version:
+          type: string
+          description: Version number (without 'v' prefix)
+        url:
+          type: string
+          format: uri
+          description: Download URL for the update package
+        signature:
+          type: string
+          description: Digital signature for the update package
+        notes:
+          type: string
+          description: Release notes for the update
+        pub_date:
+          type: string
+          format: date-time
+          description: Publication date in ISO 8601 format
+    CrashReport:
+      type: object
+      required:
+        - id
+        - timestamp
+        - appVersion
+        - platform
+        - error
+        - context
+        - system
+      properties:
+        id:
+          type: string
+          pattern: ^crash_[0-9]+_[a-zA-Z0-9]+$
+        timestamp:
+          type: string
+          format: date-time
+        appVersion:
+          type: string
+        platform:
+          type: string
+        error:
+          type: object
+          required:
+            - message
+            - type
+          properties:
+            message:
+              type: string
+            stack:
+              type: string
+            type:
+              type: string
+              enum:
+                - javascript
+                - tauri
+                - network
+                - unhandled
+                - react
+            componentStack:
+              type: string
+            filename:
+              type: string
+            lineno:
+              type: integer
+            colno:
+              type: integer
+        context:
+          type: object
+          required:
+            - sessionId
+            - url
+            - userAgent
+            - lastActions
+            - logs
+          properties:
+            sessionId:
+              type: string
+            userId:
+              type: string
+            url:
+              type: string
+            userAgent:
+              type: string
+            lastActions:
+              type: array
+              items:
+                type: string
+            logs:
+              type: array
+              items:
+                type: object
+                properties:
+                  timestamp:
+                    type: string
+                    format: date-time
+                  level:
+                    type: string
+                    enum:
+                      - DEBUG
+                      - INFO
+                      - WARN
+                      - ERROR
+                  file:
+                    type: string
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    additionalProperties: true
+                additionalProperties: false
+        system:
+          type: object
+          required:
+            - os
+            - arch
+            - version
+          properties:
+            os:
+              type: string
+            arch:
+              type: string
+            version:
+              type: string
+            memory:
+              type: string
+    CrashReportRequest:
+      type: object
+      required:
+        - reports
+      properties:
+        reports:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/CrashReport'
+    CrashReportResponse:
+      type: object
+      required:
+        - success
+        - received
+      properties:
+        success:
+          type: boolean
+        received:
+          type: integer
+          minimum: 0
+        errors:
+          type: array
+          items:
+            type: string

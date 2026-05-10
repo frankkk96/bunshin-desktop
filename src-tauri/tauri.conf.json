@@ -1,0 +1,76 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Bunshin",
+  "version": "0.3.5",
+  "identifier": "app.bunshin",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "plugins": {
+    "store": null,
+    "dialog": null,
+    "fs": {
+      "requireLiteralLeadingDot": false
+    },
+    "notification": null,
+    "os": null,
+    "opener": null,
+    "http": null,
+    "deep-link": {
+      "desktop": {
+        "schemes": ["bunshin"]
+      }
+    },
+    "sql": {
+      "preload": ["sqlite:bunshin.db"]
+    },
+    "updater": {
+      "endpoints": [
+        "https://server.bunshin.app/telemetry/check-updates?current_version={{current_version}}&target={{target}}-{{arch}}"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwM0NGN0YzMUIwN0Q5RTYKUldUbTJRY2I4L2M4a0QzSUErcnZMQmhHODd5cTRlWDNVMzMyTGJ2dlBqNUp2VytjNWdHZFlEYlEK"
+    },
+    "process": null,
+    "shell": {
+      "open": true
+    }
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "titleBarStyle": "Overlay"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost data: blob: https: http:; media-src 'self' asset: http://asset.localhost data: blob:",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**", "$HOME/**"]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "resources": ["config/models/*"],
+    "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": null,
+      "providerShortName": null
+    }
+  }
+}

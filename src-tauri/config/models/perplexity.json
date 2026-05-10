@@ -1,0 +1,134 @@
+{
+  "id": "perplexity",
+  "name": "Perplexity",
+  "models": [
+    {
+      "id": "sonar",
+      "name": "Sonar",
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "cost": {
+        "input": 1,
+        "output": 1
+      },
+      "limit": {
+        "context": 128000,
+        "output": 8192
+      },
+      "configSchema": {
+        "search_mode": {
+          "label": "Search Mode",
+          "description": "Type of search to perform",
+          "type": "string",
+          "enum": ["web", "academic", "sec"],
+          "default": "web"
+        }
+      }
+    },
+    {
+      "id": "sonar-pro",
+      "name": "Sonar Pro",
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "cost": {
+        "input": 3,
+        "output": 15
+      },
+      "limit": {
+        "context": 200000,
+        "output": 16384
+      },
+      "configSchema": {
+        "search_mode": {
+          "label": "Search Mode",
+          "description": "Type of search to perform",
+          "type": "string",
+          "enum": ["web", "academic", "sec"],
+          "default": "web"
+        }
+      }
+    },
+    {
+      "id": "sonar-reasoning",
+      "name": "Sonar Reasoning",
+      "reasoning": true,
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "cost": {
+        "input": 1,
+        "output": 5
+      },
+      "limit": {
+        "context": 128000,
+        "output": 8192
+      },
+      "configSchema": {
+        "search_mode": {
+          "label": "Search Mode",
+          "description": "Type of search to perform",
+          "type": "string",
+          "enum": ["web", "academic", "sec"],
+          "default": "web"
+        }
+      }
+    },
+    {
+      "id": "sonar-reasoning-pro",
+      "name": "Sonar Reasoning Pro",
+      "reasoning": true,
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "cost": {
+        "input": 2,
+        "output": 8
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "configSchema": {
+        "search_mode": {
+          "label": "Search Mode",
+          "description": "Type of search to perform",
+          "type": "string",
+          "enum": ["web", "academic", "sec"],
+          "default": "web"
+        }
+      }
+    },
+    {
+      "id": "sonar-deep-research",
+      "name": "Sonar Deep Research",
+      "reasoning": true,
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "cost": {
+        "input": 2,
+        "output": 8
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "configSchema": {
+        "search_mode": {
+          "label": "Search Mode",
+          "description": "Type of search to perform",
+          "type": "string",
+          "enum": ["web", "academic", "sec"],
+          "default": "web"
+        }
+      }
+    }
+  ]
+}

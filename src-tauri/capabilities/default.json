@@ -1,0 +1,300 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "core:window:allow-start-dragging",
+    "core:webview:allow-create-webview-window",
+    "core:webview:allow-webview-position",
+    "core:webview:allow-webview-size",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-close",
+    "core:window:allow-set-focus",
+    "core:window:allow-center",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-toggle-maximize",
+    "decorum:allow-show-snap-overlay",
+    "store:default",
+    "store:allow-load",
+    "store:allow-set",
+    "store:allow-get",
+    "store:allow-has",
+    "store:allow-delete",
+    "store:allow-clear",
+    "store:allow-reset",
+    "store:allow-keys",
+    "store:allow-values",
+    "store:allow-entries",
+    "store:allow-length",
+    "store:allow-reload",
+    "store:allow-save",
+    "notification:default",
+    "notification:allow-notify",
+    "dialog:default",
+    "dialog:allow-open",
+    "fs:default",
+    "fs:allow-read-file",
+    "fs:allow-exists",
+    "fs:allow-create",
+    "fs:allow-write-file",
+    "fs:allow-write-text-file",
+    "fs:allow-mkdir",
+    "fs:allow-read-dir",
+    "fs:allow-remove",
+    "shell:allow-stdin-write",
+    "shell:allow-kill",
+    "shell:allow-open",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        { "name": "npx-mcp", "cmd": "npx", "args": true },
+        { "name": "uv-mcp", "cmd": "uv", "args": true }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE"
+        },
+        {
+          "path": "$APPCACHE/**"
+        },
+        {
+          "path": "$HOME"
+        },
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE"
+        },
+        {
+          "path": "$APPCACHE/**"
+        },
+        {
+          "path": "$HOME"
+        },
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-create",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE"
+        },
+        {
+          "path": "$APPCACHE/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE"
+        },
+        {
+          "path": "$APPCACHE/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE"
+        },
+        {
+          "path": "$APPCACHE/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE"
+        },
+        {
+          "path": "$APPCACHE/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE"
+        },
+        {
+          "path": "$APPCACHE/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE"
+        },
+        {
+          "path": "$APPCACHE/**"
+        }
+      ]
+    },
+    "opener:allow-open-path",
+    "opener:allow-open-url",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$HOME"
+        },
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://*"
+        },
+        {
+          "url": "http://localhost:*"
+        },
+        {
+          "url": "http://127.0.0.1:*"
+        },
+        {
+          "url": "http://192.168.*.*:*"
+        },
+        {
+          "url": "http://10.*.*.*:*"
+        },
+        {
+          "url": "http://172.16.*.*:*"
+        },
+        {
+          "url": "http://172.17.*.*:*"
+        },
+        {
+          "url": "http://172.18.*.*:*"
+        },
+        {
+          "url": "http://172.19.*.*:*"
+        },
+        {
+          "url": "http://172.20.*.*:*"
+        },
+        {
+          "url": "http://172.21.*.*:*"
+        },
+        {
+          "url": "http://172.22.*.*:*"
+        },
+        {
+          "url": "http://172.23.*.*:*"
+        },
+        {
+          "url": "http://172.24.*.*:*"
+        },
+        {
+          "url": "http://172.25.*.*:*"
+        },
+        {
+          "url": "http://172.26.*.*:*"
+        },
+        {
+          "url": "http://172.27.*.*:*"
+        },
+        {
+          "url": "http://172.28.*.*:*"
+        },
+        {
+          "url": "http://172.29.*.*:*"
+        },
+        {
+          "url": "http://172.30.*.*:*"
+        },
+        {
+          "url": "http://172.31.*.*:*"
+        }
+      ]
+    },
+    "cache:default",
+    "process:default",
+    "log:default",
+    "log:allow-log"
+  ]
+}

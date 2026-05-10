@@ -1,0 +1,472 @@
+{
+  "id": "openai",
+  "name": "OpenAI",
+  "models": [
+    {
+      "id": "gpt-4o-audio-preview",
+      "name": "GPT-4o Audio",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": true,
+      "temperature": true,
+      "knowledge": "2024-06",
+      "releaseDate": "2024-10-01",
+      "lastUpdated": "2024-12-17",
+      "modalities": {
+        "input": ["text", "audio"],
+        "output": ["text", "audio"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 2.5,
+        "output": 10
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-4o-mini-audio-preview",
+      "name": "GPT-4o Mini Audio",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": true,
+      "temperature": true,
+      "knowledge": "2024-06",
+      "releaseDate": "2024-12-17",
+      "lastUpdated": "2024-12-17",
+      "modalities": {
+        "input": ["text", "audio"],
+        "output": ["text", "audio"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 0.15,
+        "output": 0.6
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-audio",
+      "name": "GPT Audio",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": true,
+      "temperature": true,
+      "knowledge": "2024-06",
+      "releaseDate": "2025-03-20",
+      "lastUpdated": "2025-03-20",
+      "modalities": {
+        "input": ["text", "audio"],
+        "output": ["text", "audio"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 2.5,
+        "output": 10
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-audio-mini",
+      "name": "GPT Audio Mini",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": true,
+      "temperature": true,
+      "knowledge": "2024-06",
+      "releaseDate": "2025-03-20",
+      "lastUpdated": "2025-03-20",
+      "modalities": {
+        "input": ["text", "audio"],
+        "output": ["text", "audio"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 0.6,
+        "output": 2.4
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      }
+    },
+    {
+      "id": "gpt-4o-transcribe",
+      "name": "GPT-4o Transcribe",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "2024-06",
+      "releaseDate": "2025-03-20",
+      "lastUpdated": "2025-03-20",
+      "modalities": {
+        "input": ["text", "audio"],
+        "output": ["text"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 2.5,
+        "output": 10
+      },
+      "limit": {
+        "context": 16000,
+        "output": 16000
+      }
+    },
+    {
+      "id": "gpt-4o-mini-transcribe",
+      "name": "GPT-4o Mini Transcribe",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "2024-06",
+      "releaseDate": "2025-03-20",
+      "lastUpdated": "2025-03-20",
+      "modalities": {
+        "input": ["text", "audio"],
+        "output": ["text"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 1.25,
+        "output": 5
+      },
+      "limit": {
+        "context": 16000,
+        "output": 16000
+      }
+    },
+    {
+      "id": "gpt-4o-mini-tts",
+      "name": "GPT-4o Mini TTS",
+      "attachment": false,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "2024-06",
+      "releaseDate": "2025-03-20",
+      "lastUpdated": "2025-03-20",
+      "modalities": {
+        "input": ["text"],
+        "output": ["audio"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 0.6,
+        "output": 12
+      },
+      "limit": {
+        "context": 4096,
+        "output": 4096
+      },
+      "configSchema": {
+        "voice": {
+          "label": "Voice",
+          "description": "The voice to use for TTS",
+          "type": "string",
+          "enum": ["alloy", "ash", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer"],
+          "default": "alloy"
+        },
+        "speed": {
+          "label": "Speed",
+          "description": "The speed of the generated audio (0.25 to 4.0)",
+          "type": "number",
+          "default": 1
+        },
+        "response_format": {
+          "label": "Format",
+          "description": "The audio format of the output",
+          "type": "string",
+          "enum": ["mp3", "opus", "aac", "flac", "wav", "pcm"],
+          "default": "mp3"
+        }
+      }
+    },
+    {
+      "id": "tts-1",
+      "name": "TTS-1",
+      "attachment": false,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "",
+      "releaseDate": "2023-11-06",
+      "lastUpdated": "2023-11-06",
+      "modalities": {
+        "input": ["text"],
+        "output": ["audio"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 0,
+        "output": 15
+      },
+      "limit": {
+        "context": 4096,
+        "output": 4096
+      },
+      "configSchema": {
+        "voice": {
+          "label": "Voice",
+          "description": "The voice to use for TTS",
+          "type": "string",
+          "enum": ["alloy", "ash", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer"],
+          "default": "alloy"
+        },
+        "speed": {
+          "label": "Speed",
+          "description": "The speed of the generated audio (0.25 to 4.0)",
+          "type": "number",
+          "default": 1
+        },
+        "response_format": {
+          "label": "Format",
+          "description": "The audio format of the output",
+          "type": "string",
+          "enum": ["mp3", "opus", "aac", "flac", "wav", "pcm"],
+          "default": "mp3"
+        }
+      }
+    },
+    {
+      "id": "tts-1-hd",
+      "name": "TTS-1 HD",
+      "attachment": false,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "",
+      "releaseDate": "2023-11-06",
+      "lastUpdated": "2023-11-06",
+      "modalities": {
+        "input": ["text"],
+        "output": ["audio"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 0,
+        "output": 30
+      },
+      "limit": {
+        "context": 4096,
+        "output": 4096
+      },
+      "configSchema": {
+        "voice": {
+          "label": "Voice",
+          "description": "The voice to use for TTS",
+          "type": "string",
+          "enum": ["alloy", "ash", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer"],
+          "default": "alloy"
+        },
+        "speed": {
+          "label": "Speed",
+          "description": "The speed of the generated audio (0.25 to 4.0)",
+          "type": "number",
+          "default": 1
+        },
+        "response_format": {
+          "label": "Format",
+          "description": "The audio format of the output",
+          "type": "string",
+          "enum": ["mp3", "opus", "aac", "flac", "wav", "pcm"],
+          "default": "mp3"
+        }
+      }
+    },
+    {
+      "id": "whisper-1",
+      "name": "Whisper",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "",
+      "releaseDate": "2023-03-01",
+      "lastUpdated": "2023-03-01",
+      "modalities": {
+        "input": ["audio"],
+        "output": ["text"]
+      },
+      "openWeights": true,
+      "cost": {
+        "input": 0,
+        "output": 0.006
+      },
+      "limit": {
+        "context": 0,
+        "output": 0
+      }
+    },
+    {
+      "id": "gpt-image-1",
+      "name": "GPT Image 1",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "",
+      "releaseDate": "2025-04-23",
+      "lastUpdated": "2025-04-23",
+      "modalities": {
+        "input": ["text", "image"],
+        "output": ["image"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 10,
+        "output": 40
+      },
+      "limit": {
+        "context": 32000,
+        "output": 1
+      },
+      "configSchema": {
+        "size": {
+          "label": "Size",
+          "description": "The size of the image",
+          "type": "string",
+          "enum": ["1024x1024", "1536x1024", "1024x1536"],
+          "default": "1024x1024"
+        },
+        "quality": {
+          "label": "Quality",
+          "description": "The quality of the image",
+          "type": "string",
+          "enum": ["auto", "high", "medium", "low"],
+          "default": "auto"
+        }
+      }
+    },
+    {
+      "id": "gpt-image-1-mini",
+      "name": "GPT Image 1 Mini",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "",
+      "releaseDate": "2025-04-23",
+      "lastUpdated": "2025-04-23",
+      "modalities": {
+        "input": ["text", "image"],
+        "output": ["image"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 2.5,
+        "output": 10
+      },
+      "limit": {
+        "context": 32000,
+        "output": 1
+      },
+      "configSchema": {
+        "size": {
+          "label": "Size",
+          "description": "The size of the image",
+          "type": "string",
+          "enum": ["1024x1024", "1536x1024", "1024x1536"],
+          "default": "1024x1024"
+        },
+        "quality": {
+          "label": "Quality",
+          "description": "The quality of the image",
+          "type": "string",
+          "enum": ["auto", "high", "medium", "low"],
+          "default": "auto"
+        }
+      }
+    },
+    {
+      "id": "sora-2",
+      "name": "Sora 2",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "",
+      "releaseDate": "2024-12-09",
+      "lastUpdated": "2024-12-09",
+      "modalities": {
+        "input": ["text", "image"],
+        "output": ["video"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 0,
+        "output": 0.1
+      },
+      "limit": {
+        "context": 1000,
+        "output": 1
+      },
+      "configSchema": {
+        "size": {
+          "label": "Resolution",
+          "description": "Video resolution (width x height)",
+          "type": "string",
+          "enum": ["720x1280", "1280x720", "1024x1792", "1792x1024"],
+          "default": "720x1280"
+        },
+        "seconds": {
+          "label": "Duration",
+          "description": "Clip duration in seconds",
+          "type": "string",
+          "enum": ["5", "10", "15", "20"],
+          "default": "5"
+        }
+      }
+    },
+    {
+      "id": "sora-2-pro",
+      "name": "Sora 2 Pro",
+      "attachment": true,
+      "reasoning": false,
+      "toolCall": false,
+      "temperature": false,
+      "knowledge": "",
+      "releaseDate": "2024-12-09",
+      "lastUpdated": "2024-12-09",
+      "modalities": {
+        "input": ["text", "image"],
+        "output": ["video"]
+      },
+      "openWeights": false,
+      "cost": {
+        "input": 0,
+        "output": 0.5
+      },
+      "limit": {
+        "context": 1000,
+        "output": 1
+      },
+      "configSchema": {
+        "size": {
+          "label": "Resolution",
+          "description": "Video resolution (width x height)",
+          "type": "string",
+          "enum": ["720x1280", "1280x720", "1080x1920", "1920x1080"],
+          "default": "1080x1920"
+        },
+        "seconds": {
+          "label": "Duration",
+          "description": "Clip duration in seconds",
+          "type": "string",
+          "enum": ["5", "10", "15", "20", "25"],
+          "default": "10"
+        }
+      }
+    }
+  ]
+}

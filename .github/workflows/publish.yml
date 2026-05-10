@@ -1,0 +1,293 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+# Global environment
+env:
+  APP_DIR: .
+  ICON_SRC: public/icon.png
+  RELEASE_REPO: frankkk96/Bunshin-Release
+  RELEASE_OWNER: frankkk96
+  RELEASE_REPO_NAME: Bunshin-Release
+
+jobs:
+  # 1) Create GitHub release (draft=false, prerelease=false)
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub release
+        id: create
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          repository: ${{ env.RELEASE_REPO }}
+          tag_name: ${{ github.ref_name }}
+          name: Bunshin ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+  # 2) Build & upload macOS artifacts (Tauri v2 universal build)
+  build-macos:
+    needs: create-release
+    runs-on: macos-14
+    outputs:
+      darwin_url: ${{ steps.set_outputs.outputs.darwin_url }}
+      darwin_sig: ${{ steps.set_outputs.outputs.darwin_sig }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          clean: false
+
+      # Setup Node with npm cache
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
+
+      - name: Install deps
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Build frontend
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run build --if-present
+
+      # Rust toolchain
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '${{ env.APP_DIR }}/src-tauri -> target'
+
+      # Ensure icons
+      - name: Ensure Tauri icons
+        working-directory: ${{ env.APP_DIR }}
+        shell: bash
+        run: |
+          if [ ! -f "src-tauri/icons/icon.ico" ] || [ ! -f "src-tauri/icons/icon.icns" ]; then
+            npx -y @tauri-apps/cli icon "${{ env.ICON_SRC }}"
+          fi
+
+      # Apple App Store Connect API key for notarization
+      - name: Setup App Store Connect API key
+        shell: bash
+        env:
+          KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_IDENTIFIER }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          echo "${{ secrets.APPLE_APP_STORE_CONNECT_PRIVATE_KEY }}" | base64 -d > "$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
+          chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
+          echo "Wrote ASC key to $HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
+
+      # Build & upload (includes updater JSON)
+      - name: Build & upload (macOS)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          LIBLZMA_STATIC: "1"
+          XZ2_STATIC: "1"
+        with:
+          projectPath: ${{ env.APP_DIR }}
+          # 不传 releaseId → 仅构建、不上传，由后续步骤完成 notarize & 上传
+          tagName: ${{ github.ref_name }}
+          releaseName: Bunshin ${{ github.ref_name }}
+          releaseCommitish: ${{ github.sha }}
+          args: --target universal-apple-darwin
+          includeUpdaterJson: true
+
+      # --- Notarize DMG (wait) ---
+      - name: Notarize DMG
+        shell: bash
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          ASC_ISSUER_ID: ${{ secrets.APPLE_APP_STORE_CONNECT_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.APPLE_APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          DMG=$(find src-tauri/target -type f -path "*/bundle/dmg/*.dmg" | head -n1)
+          if [ -z "$DMG" ]; then echo "DMG not found"; exit 1; fi
+          KEY_FILE="$RUNNER_TEMP/asc.p8"
+          echo "$ASC_PRIVATE_KEY" | base64 -d > "$KEY_FILE"
+          echo "Submitting $DMG for notarization..."
+          xcrun notarytool submit "$DMG" \
+            --key "$KEY_FILE" \
+            --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" \
+            --wait
+
+      # --- Staple DMG ---
+      - name: Staple DMG
+        run: |
+          DMG=$(find src-tauri/target -type f -path "*/bundle/dmg/*.dmg" | head -n1)
+          xcrun stapler staple "$DMG"
+
+      # --- Upload artifacts to external Release ---
+      - name: Upload notarized artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          BASE_PATH=src-tauri/target
+          DMG=$(find $BASE_PATH -type f -path "*/bundle/dmg/*.dmg" | head -n1)
+          APP_TAR=$(find $BASE_PATH -name "*.app.tar.gz" | head -n1 || true)
+          SIG_DMG="$DMG.sig"; SIG_APP="${APP_TAR}.sig"
+          echo "Uploading DMG: $DMG"
+          gh release upload "$TAG_NAME" "$DMG" --clobber --repo "${{ env.RELEASE_REPO }}"
+          if [ -f "$SIG_DMG" ]; then gh release upload "$TAG_NAME" "$SIG_DMG" --clobber --repo "${{ env.RELEASE_REPO }}"; fi
+          if [ -n "$APP_TAR" ]; then
+            echo "Uploading TAR: $APP_TAR"
+            gh release upload "$TAG_NAME" "$APP_TAR" --clobber --repo "${{ env.RELEASE_REPO }}"
+            if [ -f "$SIG_APP" ]; then gh release upload "$TAG_NAME" "$SIG_APP" --clobber --repo "${{ env.RELEASE_REPO }}"; fi
+          fi
+
+      # Extract URL & signature and expose as outputs
+      - name: Set URLs and signatures
+        id: set_outputs
+        shell: bash
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          BASE_URL="https://github.com/${{ env.RELEASE_REPO }}/releases/download/$TAG_NAME"
+          APP_TAR_GZ=$(find src-tauri/target -name "*.app.tar.gz" | head -n1 | xargs basename)
+          SIG_FILE="${APP_TAR_GZ}.sig"
+          DARWIN_URL="$BASE_URL/$APP_TAR_GZ"
+          DARWIN_SIG=$(find src-tauri/target -name "$SIG_FILE" -exec cat {} \; | tr -d '\n')
+          echo "darwin_url=$DARWIN_URL" >> $GITHUB_OUTPUT
+          echo "darwin_sig=$DARWIN_SIG" >> $GITHUB_OUTPUT
+
+  # 3) Build & upload Windows artifacts (Tauri v2)
+  build-windows:
+    needs: create-release
+    runs-on: windows-latest
+    outputs:
+      windows_url: ${{ steps.set_outputs.outputs.windows_url }}
+      windows_sig: ${{ steps.set_outputs.outputs.windows_sig }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          clean: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+          cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
+
+      - name: Install deps
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          if (Test-Path package-lock.json) { npm ci } else { npm install }
+        shell: pwsh
+
+      - name: Build frontend
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run build --if-present
+        shell: pwsh
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '${{ env.APP_DIR }}/src-tauri -> target'
+
+      - name: Build & upload (Windows)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
+          projectPath: ${{ env.APP_DIR }}
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          owner: ${{ env.RELEASE_OWNER }}
+          repo: ${{ env.RELEASE_REPO_NAME }}
+          tagName: ${{ github.ref_name }}
+          releaseName: Bunshin ${{ github.ref_name }}
+          releaseCommitish: ${{ github.sha }}
+          includeUpdaterJson: true
+
+      - name: Set URLs and signatures
+        id: set_outputs
+        shell: pwsh
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $BASE_URL = "https://github.com/${{ env.RELEASE_REPO }}/releases/download/$env:TAG_NAME"
+          # Prefer MSI installer
+          $artifact = Get-ChildItem -Path src-tauri/target -Recurse -Filter *.msi | Select-Object -First 1
+          if (-not $artifact) {
+            Write-Error 'No MSI installer found.'
+          }
+          $FILE_NAME = $artifact.Name
+          $SIG_PATH = "$($artifact.FullName).sig"
+          $WIN_URL = "$BASE_URL/$FILE_NAME"
+          if (Test-Path $SIG_PATH) {
+            $WIN_SIG = (Get-Content -Raw $SIG_PATH).Trim()
+          } else {
+            $WIN_SIG = ''
+          }
+          echo "windows_url=$WIN_URL" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "windows_sig=$WIN_SIG" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+  # 4) Notify update server
+  notify-update-server:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send update notification
+        env:
+          VERSION: ${{ github.ref_name }}
+          NOTES: ${{ github.event.head_commit.message }}
+          DARWIN_URL: ${{ needs.build-macos.outputs.darwin_url }}
+          DARWIN_SIG: ${{ needs.build-macos.outputs.darwin_sig }}
+          WINDOWS_URL: ${{ needs.build-windows.outputs.windows_url }}
+          WINDOWS_SIG: ${{ needs.build-windows.outputs.windows_sig }}
+          UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
+        run: |
+          set -euo pipefail
+          JSON=$(jq -n \
+            --arg v "$VERSION" \
+            --arg notes "$NOTES" \
+            --arg durl "$DARWIN_URL" \
+            --arg dsg "$DARWIN_SIG" \
+            --arg wurl "$WINDOWS_URL" \
+            --arg wsg "$WINDOWS_SIG" \
+            '{version:$v, notes:$notes, darwin_url:$durl, darwin_sig:$dsg, windows_url:$wurl, windows_sig:$wsg}')
+          echo "$JSON" | jq .
+            curl -X POST "https://server.bunshin.app/telemetry/update" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer $UPDATE_TOKEN" \
+            -d "$JSON" \
+              --fail --show-error
