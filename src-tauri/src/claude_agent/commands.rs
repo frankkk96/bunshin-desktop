@@ -1,6 +1,8 @@
 use crate::claude_agent::manager::{ClaudeSessionManager, RunningSessionInfo};
 use crate::database::models::{PermissionMode, ProviderType, Session};
-use crate::database::repositories::{AgentRepository, ProviderRepository, SessionRepository};
+use crate::database::repositories::{
+    AgentRepository, MessageRepository, ProviderRepository, SessionRepository,
+};
 use crate::database::AppState;
 use crate::secure_storage::SecureStorage;
 use serde::Deserialize;
@@ -65,6 +67,17 @@ pub async fn start_session(
         ));
     }
 
+    // Enforce at most one session per (agent, cwd). Surface the existing id with
+    // a structured prefix so the frontend can navigate to it instead of erroring.
+    let session_repo = SessionRepository::new(state.db_pool.clone());
+    if let Some(existing) = session_repo
+        .find_by_agent_and_cwd(&agent.id, &input.cwd)
+        .await
+        .map_err(|e| e.to_string())?
+    {
+        return Err(format!("DUPLICATE_SESSION:{}", existing.id));
+    }
+
     let api_key = if matches!(provider.type_, ProviderType::Api) {
         match load_provider_api_key(&app, &provider.id)? {
             Some(k) if !k.is_empty() => Some(k),
@@ -90,25 +103,40 @@ pub async fn start_session(
         created_at: now,
         updated_at: now,
         visited_at: now,
+        claude_session_id: uuid::Uuid::new_v4().to_string(),
     };
 
-    let session_repo = SessionRepository::new(state.db_pool.clone());
     let session = session_repo
         .create(session)
         .await
         .map_err(|e| e.to_string())?;
 
-    manager
-        .start(
-            &session,
-            &provider,
-            api_key.as_deref(),
-            false,
-            state.db_pool.clone(),
-            app.clone(),
-        )
-        .await
-        .map_err(|e| e.to_string())?;
+    // Spawn the subprocess in the background so the frontend can navigate to the
+    // new session immediately without waiting for claude CLI bootstrap.
+    let manager_clone = manager.inner().clone();
+    let session_clone = session.clone();
+    let provider_clone = provider.clone();
+    let api_key_owned = api_key.map(|s| s.to_string());
+    let pool_clone = state.db_pool.clone();
+    let app_clone = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = manager_clone
+            .start(
+                &session_clone,
+                &provider_clone,
+                api_key_owned.as_deref(),
+                false,
+                pool_clone,
+                app_clone,
+            )
+            .await
+        {
+            log::error!(
+                "failed to spawn claude subprocess for session {}: {e}",
+                session_clone.id
+            );
+        }
+    });
 
     Ok(session)
 }
@@ -203,6 +231,71 @@ pub async fn cancel_query(
         .get(&session_id)
         .ok_or_else(|| format!("session {} is not running", session_id))?;
     process.cancel().await.map_err(|e| e.to_string())
+}
+
+/// /clear: kill the subprocess, drop persisted messages, rotate the underlying
+/// claude session UUID, and respawn so the conversation starts truly empty.
+#[tauri::command]
+pub async fn clear_session(
+    session_id: String,
+    state: State<'_, AppState>,
+    manager: State<'_, Arc<ClaudeSessionManager>>,
+    app: AppHandle,
+) -> Result<(), String> {
+    // 1. stop any running process for this session
+    manager
+        .stop(&session_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 2. rotate the claude session id + delete persisted messages
+    let session_repo = SessionRepository::new(state.db_pool.clone());
+    let new_uuid = uuid::Uuid::new_v4().to_string();
+    session_repo
+        .rotate_claude_session_id(&session_id, &new_uuid)
+        .await
+        .map_err(|e| e.to_string())?;
+    let message_repo = MessageRepository::new(state.db_pool.clone());
+    message_repo
+        .delete_by_session(&session_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 3. restart with the rotated id (resume=false → fresh conversation)
+    let session = session_repo
+        .get(&session_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("session {} not found", session_id))?;
+    let agent_repo = AgentRepository::new(state.db_pool.clone());
+    let agent = agent_repo
+        .get(&session.agent_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("agent {} not found", session.agent_id))?;
+    let provider_repo = ProviderRepository::new(state.db_pool.clone());
+    let provider = provider_repo
+        .get(&agent.provider_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("provider {} not found", agent.provider_id))?;
+    let api_key = if matches!(provider.type_, ProviderType::Api) {
+        load_provider_api_key(&app, &provider.id)?
+    } else {
+        None
+    };
+    manager
+        .start(
+            &session,
+            &provider,
+            api_key.as_deref(),
+            false,
+            state.db_pool.clone(),
+            app,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]

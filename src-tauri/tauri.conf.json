@@ -19,11 +19,6 @@
     "os": null,
     "opener": null,
     "http": null,
-    "deep-link": {
-      "desktop": {
-        "schemes": ["bunshin"]
-      }
-    },
     "updater": {
       "endpoints": [
         "https://server.bunshin.app/telemetry/check-updates?current_version={{current_version}}&target={{target}}-{{arch}}"

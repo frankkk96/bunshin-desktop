@@ -8,7 +8,6 @@ export const agentsApi = {
     alias: string
     description: string | null
     avatar: string | null
-    pinned: boolean
     providerId: string
   }) => invoke<Agent>('create_agent', { input }),
   update: (input: {
@@ -16,7 +15,6 @@ export const agentsApi = {
     alias: string
     description: string | null
     avatar: string | null
-    pinned: boolean
   }) => invoke<Agent>('update_agent', { input }),
   delete: (id: string) => invoke<void>('delete_agent', { id }),
 }

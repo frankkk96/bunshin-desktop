@@ -98,7 +98,6 @@ impl DatabaseConnection {
                 alias TEXT NOT NULL,
                 description TEXT,
                 avatar TEXT,
-                pinned INTEGER NOT NULL DEFAULT 0,
                 provider_id TEXT NOT NULL REFERENCES providers(id) ON DELETE RESTRICT,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL
@@ -107,6 +106,12 @@ impl DatabaseConnection {
         )
         .execute(&self.pool)
         .await?;
+
+        // Drop the legacy `pinned` column from existing installs (best-effort:
+        // SQLite ignores the error if the column was never present).
+        let _ = sqlx::query("ALTER TABLE agents DROP COLUMN pinned")
+            .execute(&self.pool)
+            .await;
 
         sqlx::query(
             r#"
@@ -119,12 +124,24 @@ impl DatabaseConnection {
                 favorite INTEGER NOT NULL DEFAULT 0,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
-                visited_at INTEGER NOT NULL
+                visited_at INTEGER NOT NULL,
+                claude_session_id TEXT NOT NULL DEFAULT ''
             )
             "#,
         )
         .execute(&self.pool)
         .await?;
+
+        // For installs created before claude_session_id was added: best-effort add
+        // the column then backfill it from the row's id (which used to do double duty).
+        let _ = sqlx::query(
+            "ALTER TABLE sessions ADD COLUMN claude_session_id TEXT NOT NULL DEFAULT ''",
+        )
+        .execute(&self.pool)
+        .await;
+        sqlx::query("UPDATE sessions SET claude_session_id = id WHERE claude_session_id = ''")
+            .execute(&self.pool)
+            .await?;
 
         sqlx::query(
             r#"

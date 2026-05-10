@@ -79,6 +79,17 @@ export function useCancelQuery() {
   })
 }
 
+export function useClearSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => sessionsApi.clear(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: [...KEY, id, 'messages'] })
+      qc.invalidateQueries({ queryKey: RUNNING_KEY })
+    },
+  })
+}
+
 export function useRenameSession() {
   const qc = useQueryClient()
   return useMutation({

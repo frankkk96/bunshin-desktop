@@ -10,8 +10,6 @@ pub struct CreateAgentInput {
     pub alias: String,
     pub description: Option<String>,
     pub avatar: Option<String>,
-    #[serde(default)]
-    pub pinned: bool,
     pub provider_id: String,
 }
 
@@ -22,8 +20,6 @@ pub struct UpdateAgentInput {
     pub alias: String,
     pub description: Option<String>,
     pub avatar: Option<String>,
-    #[serde(default)]
-    pub pinned: bool,
 }
 
 #[tauri::command]
@@ -43,7 +39,6 @@ pub async fn create_agent(
     input: CreateAgentInput,
     state: State<'_, AppState>,
 ) -> Result<Agent, String> {
-    // Validate that the provider exists.
     let provider_repo = ProviderRepository::new(state.db_pool.clone());
     if provider_repo
         .get(&input.provider_id)
@@ -60,7 +55,6 @@ pub async fn create_agent(
         alias: input.alias,
         description: input.description,
         avatar: input.avatar,
-        pinned: input.pinned,
         provider_id: input.provider_id,
         created_at: now,
         updated_at: now,
@@ -86,7 +80,6 @@ pub async fn update_agent(
         alias: input.alias,
         description: input.description,
         avatar: input.avatar,
-        pinned: input.pinned,
         provider_id: existing.provider_id,
         created_at: existing.created_at,
         updated_at: now,

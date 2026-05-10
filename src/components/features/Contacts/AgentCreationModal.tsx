@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   MacOSButton,
   MacOSInput,
@@ -25,13 +25,24 @@ interface AgentCreationModalProps {
 }
 
 export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalProps) {
-  const { data: providers = [] } = useProviders()
+  const providersQuery = useProviders()
+  const providers = providersQuery.data ?? []
   const createAgent = useCreateAgent()
 
   const [alias, setAlias] = useState('')
-  const [description, setDescription] = useState('')
-  const [avatar, setAvatar] = useState('')
   const [providerId, setProviderId] = useState<string | undefined>(providers[0]?.id)
+
+  // Refresh on open so a freshly-created provider appears without restart.
+  useEffect(() => {
+    void providersQuery.refetch()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!providerId && providers[0]) {
+      setProviderId(providers[0].id)
+    }
+  }, [providers, providerId])
 
   const handleCreate = async () => {
     if (!alias.trim()) {
@@ -45,9 +56,8 @@ export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalPro
     try {
       const agent = await createAgent.mutateAsync({
         alias: alias.trim(),
-        description: description.trim() || null,
-        avatar: avatar.trim() || null,
-        pinned: false,
+        description: null,
+        avatar: null,
         providerId,
       })
       onCreated(agent)
@@ -64,9 +74,9 @@ export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalPro
           Pick a provider once — it can not be changed later.
         </MacOSSheetDescription>
       </MacOSSheetHeader>
-      <MacOSSheetContent>
-        <div className="space-y-3">
-          <div>
+      <MacOSSheetContent className="px-6 py-5">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
             <MacOSLabel>Name</MacOSLabel>
             <MacOSInput
               autoFocus
@@ -75,24 +85,7 @@ export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalPro
               placeholder="e.g. Codey"
             />
           </div>
-          <div>
-            <MacOSLabel>Avatar (optional emoji)</MacOSLabel>
-            <MacOSInput
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-              maxLength={4}
-              placeholder="🤖"
-            />
-          </div>
-          <div>
-            <MacOSLabel>Description</MacOSLabel>
-            <MacOSInput
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What this agent is for"
-            />
-          </div>
-          <div>
+          <div className="space-y-1.5">
             <MacOSLabel>Provider</MacOSLabel>
             {providers.length === 0 ? (
               <p className="text-sm text-muted-foreground">

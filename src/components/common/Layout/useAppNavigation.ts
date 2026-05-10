@@ -11,12 +11,12 @@ export function useAppNavigation() {
     [navigate],
   )
 
-  const navigateToContact = useCallback(
-    (contactId?: string) => {
-      if (contactId) {
-        navigate(`/contacts/${contactId}`)
+  const navigateToAgent = useCallback(
+    (agentId?: string) => {
+      if (agentId) {
+        navigate(`/agents/${agentId}`)
       } else {
-        navigate('/contacts')
+        navigate('/agents')
       }
     },
     [navigate],
@@ -31,7 +31,7 @@ export function useAppNavigation() {
 
   return {
     navigateToSession,
-    navigateToContact,
+    navigateToAgent,
     navigateToTab,
   }
 }

@@ -1,6 +1,7 @@
-import { cn } from '@/lib/ui/utils'
+import { AgentAvatar } from '@/components/common'
 import { useAgents } from '@/hooks/agents'
 import { useRunningSessions } from '@/hooks/sessions'
+import { cn } from '@/lib/ui/utils'
 import type { Session } from '@/lib/types'
 
 interface SessionsListProps {
@@ -15,8 +16,8 @@ export function SessionsList({ sessions, selectedId, onSelect }: SessionsListPro
 
   if (sessions.length === 0) {
     return (
-      <div className="px-3 py-4 text-xs text-muted-foreground">
-        No sessions yet. Click + to start one.
+      <div className="px-4 py-6 text-xs text-muted-foreground">
+        No sessions yet — click <kbd className="px-1 rounded bg-muted">+</kbd> to start one.
       </div>
     )
   }
@@ -26,25 +27,36 @@ export function SessionsList({ sessions, selectedId, onSelect }: SessionsListPro
       {sessions.map((s) => {
         const agent = agents.find((a) => a.id === s.agentId)
         const status = running.find((r) => r.sessionId === s.id)?.status
+        const isSelected = selectedId === s.id
+        const title = s.name || agent?.alias || 'Session'
+
         return (
-          <button
+          <div
             key={s.id}
             onClick={() => onSelect(s.id)}
             className={cn(
-              'flex flex-col items-start px-3 py-2 hover:bg-muted/40 text-left transition-colors',
-              selectedId === s.id && 'bg-muted',
+              'w-[calc(100%-24px)] py-2 px-1.5 rounded-md my-0.5 mx-3 cursor-default',
+              isSelected ? 'bg-accent' : 'hover:bg-muted/40',
             )}
           >
-            <div className="flex items-center gap-2 w-full">
-              <StatusDot status={status} />
-              <span className="text-sm font-medium truncate flex-1">
-                {s.name || agent?.alias || 'Session'}
-              </span>
+            <div className="flex items-center gap-2.5">
+              <AgentAvatar agent={agent} size={36} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+                  <span className="text-sm font-semibold text-foreground truncate flex-1">
+                    {title}
+                  </span>
+                  <StatusDot status={status} />
+                </div>
+                <div
+                  className="text-[11px] text-muted-foreground truncate"
+                  title={s.cwd}
+                >
+                  {s.cwd}
+                </div>
+              </div>
             </div>
-            <span className="text-[11px] text-muted-foreground truncate w-full mt-0.5">
-              {agent?.alias ?? 'Unknown agent'} · {s.cwd}
-            </span>
-          </button>
+          </div>
         )
       })}
     </div>
@@ -58,5 +70,12 @@ function StatusDot({ status }: { status?: 'running' | 'stopped' | 'crashed' }) {
       : status === 'crashed'
         ? 'bg-red-500'
         : 'bg-gray-400/60'
-  return <span className={cn('w-1.5 h-1.5 rounded-full', color)} />
+  const title =
+    status === 'running' ? 'Running' : status === 'crashed' ? 'Crashed' : 'Idle'
+  return (
+    <span
+      title={title}
+      className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', color)}
+    />
+  )
 }

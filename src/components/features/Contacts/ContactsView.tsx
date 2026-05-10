@@ -14,16 +14,14 @@ export function ContactsView() {
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
 
-  const filtered = agents.filter((a) =>
-    a.alias.toLowerCase().includes(search.toLowerCase()),
-  )
+  const filtered = agents.filter((a) => a.alias.toLowerCase().includes(search.toLowerCase()))
 
   const selected = contactId ? agents.find((a) => a.id === contactId) : null
 
   return (
     <div className="flex h-full">
       <SidebarContainer
-        title="Contacts"
+        title="Agents"
         searchPlaceholder="Search agents"
         searchValue={search}
         onSearchChange={setSearch}
@@ -37,15 +35,18 @@ export function ContactsView() {
         <ContactsList
           agents={filtered}
           selectedId={contactId}
-          onSelect={(id) => navigate(`/contacts/${id}`)}
+          onSelect={(id) => navigate(`/agents/${id}`)}
         />
       </SidebarContainer>
 
       <div className="flex-1 overflow-hidden">
         {selected ? (
-          <AgentDetail agent={selected} />
+          <AgentDetail agent={selected} key={selected.id} />
         ) : (
-          <NotFoundView entityType="Agent" message="Pick an agent on the left to inspect or edit." />
+          <NotFoundView
+            entityType="Agent"
+            message="Pick an agent on the left, or create a new one."
+          />
         )}
       </div>
 
@@ -54,7 +55,7 @@ export function ContactsView() {
           onClose={() => setCreating(false)}
           onCreated={(agent) => {
             setCreating(false)
-            navigate(`/contacts/${agent.id}`)
+            navigate(`/agents/${agent.id}`)
           }}
         />
       )}

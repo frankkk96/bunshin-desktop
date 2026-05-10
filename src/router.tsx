@@ -32,11 +32,11 @@ export const routes: RouteObject[] = [
             element: <SessionsView />,
           },
           {
-            path: 'contacts',
+            path: 'agents',
             element: <ContactsView />,
           },
           {
-            path: 'contacts/:contactId',
+            path: 'agents/:contactId',
             element: <ContactsView />,
           },
           {

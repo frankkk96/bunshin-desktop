@@ -64,7 +64,7 @@ function logAndToast(message: string, options: ErrorOptions = {}) {
   if (!options.silent) {
     // 对于开发环境，在toast中也显示一些关键信息
     let toastMessage = message
-    if (options.metadata && process.env.NODE_ENV === 'development') {
+    if (options.metadata && import.meta.env.DEV) {
       const keyInfo = []
       if (options.metadata.agentsCount !== undefined) {
         keyInfo.push(`Agents: ${options.metadata.agentsCount}`)

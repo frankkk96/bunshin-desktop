@@ -30,6 +30,14 @@ impl MessageRepository {
         Ok(row.0.unwrap_or(0) + 1)
     }
 
+    pub async fn delete_by_session(&self, session_id: &str) -> AppResult<()> {
+        sqlx::query("DELETE FROM messages WHERE session_id = ?")
+            .bind(session_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
     pub async fn append(
         &self,
         session_id: &str,

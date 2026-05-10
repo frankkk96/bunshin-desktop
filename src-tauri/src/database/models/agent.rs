@@ -7,7 +7,6 @@ pub struct DbAgent {
     pub alias: String,
     pub description: Option<String>,
     pub avatar: Option<String>,
-    pub pinned: i64,
     pub provider_id: String,
     pub created_at: i64,
     pub updated_at: i64,
@@ -22,8 +21,6 @@ pub struct Agent {
     pub description: Option<String>,
     #[serde(default)]
     pub avatar: Option<String>,
-    #[serde(default)]
-    pub pinned: bool,
     pub provider_id: String,
     pub created_at: i64,
     pub updated_at: i64,
@@ -36,7 +33,6 @@ impl From<DbAgent> for Agent {
             alias: db.alias,
             description: db.description,
             avatar: db.avatar,
-            pinned: db.pinned != 0,
             provider_id: db.provider_id,
             created_at: db.created_at,
             updated_at: db.updated_at,

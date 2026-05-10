@@ -49,6 +49,9 @@ pub struct DbSession {
     pub created_at: i64,
     pub updated_at: i64,
     pub visited_at: i64,
+    /// The UUID we hand to `claude --session-id` / `--resume`. Distinct from
+    /// `id` so /clear can rotate it without changing Bunshin's session row.
+    pub claude_session_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +68,7 @@ pub struct Session {
     pub created_at: i64,
     pub updated_at: i64,
     pub visited_at: i64,
+    pub claude_session_id: String,
 }
 
 impl From<DbSession> for Session {
@@ -80,6 +84,7 @@ impl From<DbSession> for Session {
             created_at: db.created_at,
             updated_at: db.updated_at,
             visited_at: db.visited_at,
+            claude_session_id: db.claude_session_id,
         }
     }
 }

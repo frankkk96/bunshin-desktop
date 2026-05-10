@@ -1,7 +1,13 @@
 import { useState, type KeyboardEvent } from 'react'
-import { Paperclip, Send, Square, X } from 'lucide-react'
+import { IoArrowUpCircle, IoStopCircleOutline, IoImageOutline } from 'react-icons/io5'
+import { X } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
-import { MacOSButton, MacOSTextarea } from '@/components/ui'
+import { IconButton } from '@/components/common'
+import {
+  MacOSTooltip,
+  MacOSTooltipContent,
+  MacOSTooltipTrigger,
+} from '@/components/ui'
 import { cn } from '@/lib/ui/utils'
 
 interface ComposerProps {
@@ -12,19 +18,13 @@ interface ComposerProps {
 }
 
 interface PickedAttachment {
-  // Preview metadata for the chip + the encoded payload we'll send.
   name: string
   mediaType: string
   block: any
 }
 
 interface MediaPickerResult {
-  media: {
-    localPath: string
-    name: string
-    type: string
-    mimeType: string
-  } | null
+  media: { localPath: string; name: string; type: string; mimeType: string } | null
   cancelled: boolean
   error: string | null
 }
@@ -34,6 +34,8 @@ export function Composer({ disabled, canCancel, onSend, onCancel }: ComposerProp
   const [attachments, setAttachments] = useState<PickedAttachment[]>([])
   const [busy, setBusy] = useState(false)
 
+  const ready = (text.trim().length > 0 || attachments.length > 0) && !disabled && !busy
+
   const handleAttach = async () => {
     try {
       const result = await invoke<MediaPickerResult>('select_media_from_library', {
@@ -42,35 +44,25 @@ export function Composer({ disabled, canCancel, onSend, onCancel }: ComposerProp
       if (result.cancelled || !result.media) return
       const m = result.media
       const base64 = await invoke<string>('media_get_base64', { media: m })
-      // `media_get_base64` returns a data: URL. Strip the prefix for content-block payloads.
       const data = base64.startsWith('data:') ? base64.split(',', 2)[1] ?? base64 : base64
       const block =
         m.type === 'image'
-          ? {
-              type: 'image',
-              source: { type: 'base64', media_type: m.mimeType, data },
-            }
-          : {
-              type: 'document',
-              source: { type: 'base64', media_type: m.mimeType, data },
-            }
+          ? { type: 'image', source: { type: 'base64', media_type: m.mimeType, data } }
+          : { type: 'document', source: { type: 'base64', media_type: m.mimeType, data } }
       setAttachments((prev) => [...prev, { name: m.name, mediaType: m.type, block }])
     } catch (err) {
       console.error('attach failed', err)
     }
   }
 
-  const removeAttachment = (idx: number) => {
+  const removeAttachment = (idx: number) =>
     setAttachments((prev) => prev.filter((_, i) => i !== idx))
-  }
 
   const handleSend = async () => {
-    const trimmed = text.trim()
-    if (!trimmed && attachments.length === 0) return
-    if (busy) return
+    if (!ready) return
     setBusy(true)
     try {
-      await onSend(trimmed, attachments.map((a) => a.block))
+      await onSend(text.trim(), attachments.map((a) => a.block))
       setText('')
       setAttachments([])
     } finally {
@@ -79,50 +71,99 @@ export function Composer({ disabled, canCancel, onSend, onCancel }: ComposerProp
   }
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
       e.preventDefault()
       void handleSend()
     }
   }
 
   return (
-    <div className="border-t border-border bg-background px-4 py-3">
-      {attachments.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2">
-          {attachments.map((a, idx) => (
-            <span
-              key={idx}
-              className="inline-flex items-center gap-1 text-xs bg-muted rounded px-2 py-0.5"
-            >
-              {a.mediaType}: {a.name}
-              <button onClick={() => removeAttachment(idx)} className="text-muted-foreground">
-                <X size={10} />
-              </button>
-            </span>
-          ))}
+    <div className="p-3 px-4 relative bg-background">
+      <div className="flex justify-center">
+        <div
+          className={cn(
+            'relative rounded-xl border p-3 min-h-[80px] w-full bg-input border-border',
+            disabled && 'opacity-60',
+          )}
+        >
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {attachments.map((a, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1 text-[11px] bg-background border border-border rounded px-2 py-0.5"
+                >
+                  <span className="text-muted-foreground">{a.mediaType}:</span>
+                  <span className="max-w-[160px] truncate">{a.name}</span>
+                  <button
+                    onClick={() => removeAttachment(idx)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder={disabled ? 'Subprocess not running…' : 'Ask me anything...'}
+            rows={2}
+            disabled={disabled || busy}
+            className="w-full border-none bg-transparent text-sm outline-none resize-none pb-10 pr-12 min-h-[30px] max-h-[160px] leading-snug text-foreground"
+            style={{ overflow: text.split('\n').length > 5 ? 'auto' : 'hidden' }}
+          />
+
+          <div className="absolute bottom-2 left-2 flex gap-0.5">
+            <MacOSTooltip>
+              <MacOSTooltipTrigger asChild>
+                <div>
+                  <IconButton onClick={handleAttach} disabled={disabled}>
+                    <IoImageOutline size={20} className="text-muted-foreground" />
+                  </IconButton>
+                </div>
+              </MacOSTooltipTrigger>
+              <MacOSTooltipContent side="top" sideOffset={8}>
+                Attach image / PDF
+              </MacOSTooltipContent>
+            </MacOSTooltip>
+          </div>
+
+          <div className="absolute bottom-1 right-1 flex gap-1">
+            {canCancel && (
+              <MacOSTooltip>
+                <MacOSTooltipTrigger asChild>
+                  <div>
+                    <IconButton onClick={onCancel}>
+                      <IoStopCircleOutline size={32} className="text-foreground" />
+                    </IconButton>
+                  </div>
+                </MacOSTooltipTrigger>
+                <MacOSTooltipContent side="top" sideOffset={8}>
+                  Stop generating
+                </MacOSTooltipContent>
+              </MacOSTooltip>
+            )}
+            <MacOSTooltip>
+              <MacOSTooltipTrigger asChild>
+                <div>
+                  <IconButton onClick={handleSend} disabled={!ready}>
+                    <IoArrowUpCircle
+                      size={32}
+                      className={!ready ? 'text-muted-foreground' : 'text-foreground'}
+                    />
+                  </IconButton>
+                </div>
+              </MacOSTooltipTrigger>
+              <MacOSTooltipContent side="top" sideOffset={8}>
+                Send (Enter)
+              </MacOSTooltipContent>
+            </MacOSTooltip>
+          </div>
         </div>
-      )}
-      <div className="flex items-end gap-2">
-        <MacOSButton variant="icon" onClick={handleAttach} disabled={disabled}>
-          <Paperclip size={16} />
-        </MacOSButton>
-        <MacOSTextarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder={disabled ? 'Subprocess not running…' : 'Message Claude · ⌘↵ to send'}
-          rows={2}
-          disabled={disabled || busy}
-          className={cn('flex-1 resize-none', disabled && 'opacity-60')}
-        />
-        {canCancel && (
-          <MacOSButton variant="icon" onClick={onCancel}>
-            <Square size={16} />
-          </MacOSButton>
-        )}
-        <MacOSButton onClick={handleSend} disabled={disabled || busy}>
-          <Send size={16} />
-        </MacOSButton>
       </div>
     </div>
   )

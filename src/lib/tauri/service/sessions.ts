@@ -29,6 +29,7 @@ export const sessionsApi = {
     attachments: any[]
   }) => invoke<void>('send_user_message', { input }),
   cancel: (sessionId: string) => invoke<void>('cancel_query', { sessionId }),
+  clear: (sessionId: string) => invoke<void>('clear_session', { sessionId }),
   listRunning: () => invoke<RunningSessionInfo[]>('list_running_sessions'),
   getMessages: (sessionId: string) =>
     invoke<Message[]>('get_messages_by_session', { sessionId }),

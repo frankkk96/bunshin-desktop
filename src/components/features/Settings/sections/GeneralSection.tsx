@@ -1,5 +1,17 @@
 import { useState } from 'react'
-import { Globe, RefreshCw, Palette, Router, Check, X, Loader2, Download, Bug } from 'lucide-react'
+import {
+  Globe,
+  RefreshCw,
+  Palette,
+  Router,
+  Check,
+  X,
+  Loader2,
+  Download,
+  Bug,
+  MessageSquare,
+} from 'lucide-react'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import {
   MacOSSwitch,
   MacOSInput,
@@ -11,6 +23,8 @@ import { Theme, useAppSettingsQuery } from '@/hooks/settings/query'
 import { useSettingsMutations, useSettingsChangeListener } from '@/hooks/settings/mutations'
 import { useProxy } from '@/components/features/Settings/hooks/useProxy'
 import { app } from '@/lib/tauri/system/app'
+import { testCrashAndSubmit } from '@/lib/core/utils/crash'
+import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
 import { SettingSelect } from '../components/SettingSelect'
 import { SettingSection } from '../components/SettingSection'
@@ -37,6 +51,29 @@ export function GeneralSection() {
   const [isExporting, setIsExporting] = useState(false)
   const [dataManagementError, setDataManagementError] = useState<string | null>(null)
   const [dataManagementSuccess, setDataManagementSuccess] = useState<string | null>(null)
+  const [isTestingCrash, setIsTestingCrash] = useState(false)
+
+  const handleFeedbackClick = async () => {
+    try {
+      await openUrl('https://github.com/frankkk96/Bunshin-Release/issues')
+    } catch (error) {
+      console.error('Failed to open feedback URL:', error)
+    }
+  }
+
+  const handleTestCrashClick = async () => {
+    try {
+      setIsTestingCrash(true)
+      toast.info('Triggering test crash and reading logs...')
+      await testCrashAndSubmit('https://server.bunshin.app/telemetry/crash-reports')
+      toast.success('Crash report submitted successfully!')
+    } catch (error) {
+      console.error('Test crash failed:', error)
+      toast.error('Test failed: ' + (error as Error).message)
+    } finally {
+      setIsTestingCrash(false)
+    }
+  }
 
   // Get test button content based on status
   const getTestButtonContent = () => {
@@ -248,6 +285,49 @@ export function GeneralSection() {
             )}
           </MacOSButton>
         </SettingRow>
+      </SettingSection>
+
+      {/* Help & Diagnostics */}
+      <SettingSection title="Help & Diagnostics">
+        <SettingRow
+          icon={<MessageSquare className="w-4 h-4" />}
+          title="Submit Feedback"
+          description="Open the GitHub issue tracker"
+        >
+          <MacOSButton onClick={handleFeedbackClick} size="sm" variant="outline">
+            Open
+          </MacOSButton>
+        </SettingRow>
+
+        {import.meta.env.DEV && (
+          <>
+            <SettingDivider />
+            <SettingRow
+              icon={<Bug className="w-4 h-4" />}
+              title="Test Crash & Logs"
+              description="Triggers a test crash report (dev only)"
+            >
+              <MacOSButton
+                onClick={handleTestCrashClick}
+                disabled={isTestingCrash}
+                size="sm"
+                variant="outline"
+              >
+                {isTestingCrash ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Testing…
+                  </>
+                ) : (
+                  <>
+                    <Bug className="w-3.5 h-3.5 mr-1.5" />
+                    Trigger
+                  </>
+                )}
+              </MacOSButton>
+            </SettingRow>
+          </>
+        )}
       </SettingSection>
     </div>
   )

@@ -2,6 +2,9 @@ use crate::database::models::{Agent, DbAgent};
 use crate::error::{AppError, AppResult};
 use sqlx::SqlitePool;
 
+const SELECT_COLS: &str =
+    "id, alias, description, avatar, provider_id, created_at, updated_at";
+
 pub struct AgentRepository {
     pool: SqlitePool,
 }
@@ -12,16 +15,16 @@ impl AgentRepository {
     }
 
     pub async fn list(&self) -> AppResult<Vec<Agent>> {
-        let rows = sqlx::query_as::<_, DbAgent>(
-            "SELECT * FROM agents ORDER BY pinned DESC, created_at DESC",
-        )
-        .fetch_all(&self.pool)
-        .await?;
+        let sql = format!("SELECT {SELECT_COLS} FROM agents ORDER BY created_at DESC");
+        let rows = sqlx::query_as::<_, DbAgent>(&sql)
+            .fetch_all(&self.pool)
+            .await?;
         Ok(rows.into_iter().map(Agent::from).collect())
     }
 
     pub async fn get(&self, id: &str) -> AppResult<Option<Agent>> {
-        let row = sqlx::query_as::<_, DbAgent>("SELECT * FROM agents WHERE id = ?")
+        let sql = format!("SELECT {SELECT_COLS} FROM agents WHERE id = ?");
+        let row = sqlx::query_as::<_, DbAgent>(&sql)
             .bind(id)
             .fetch_optional(&self.pool)
             .await?;
@@ -31,15 +34,14 @@ impl AgentRepository {
     pub async fn create(&self, agent: Agent) -> AppResult<Agent> {
         sqlx::query(
             r#"
-            INSERT INTO agents (id, alias, description, avatar, pinned, provider_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO agents (id, alias, description, avatar, provider_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(&agent.id)
         .bind(&agent.alias)
         .bind(agent.description.as_deref())
         .bind(agent.avatar.as_deref())
-        .bind(if agent.pinned { 1i64 } else { 0i64 })
         .bind(&agent.provider_id)
         .bind(agent.created_at)
         .bind(agent.updated_at)
@@ -63,14 +65,13 @@ impl AgentRepository {
         sqlx::query(
             r#"
             UPDATE agents
-            SET alias = ?, description = ?, avatar = ?, pinned = ?, updated_at = ?
+            SET alias = ?, description = ?, avatar = ?, updated_at = ?
             WHERE id = ?
             "#,
         )
         .bind(&agent.alias)
         .bind(agent.description.as_deref())
         .bind(agent.avatar.as_deref())
-        .bind(if agent.pinned { 1i64 } else { 0i64 })
         .bind(agent.updated_at)
         .bind(&agent.id)
         .execute(&self.pool)

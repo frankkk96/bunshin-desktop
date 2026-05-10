@@ -14,7 +14,6 @@ export interface Agent {
   alias: string
   description: string | null
   avatar: string | null
-  pinned: boolean
   providerId: string
   createdAt: number
   updatedAt: number
@@ -37,6 +36,7 @@ export interface Session {
   createdAt: number
   updatedAt: number
   visitedAt: number
+  claudeSessionId: string
 }
 
 /**

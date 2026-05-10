@@ -55,9 +55,9 @@ impl ClaudeProcess {
             .arg("--verbose");
 
         if cfg.resume {
-            cmd.arg("--resume").arg(&session.id);
+            cmd.arg("--resume").arg(&session.claude_session_id);
         } else {
-            cmd.arg("--session-id").arg(&session.id);
+            cmd.arg("--session-id").arg(&session.claude_session_id);
         }
 
         cmd.arg("--add-dir")

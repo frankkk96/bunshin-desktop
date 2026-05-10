@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { IoAddOutline } from 'react-icons/io5'
 import { SidebarContainer, NotFoundView } from '@/components/common'
 import { useSessions } from '@/hooks/sessions'
@@ -9,10 +9,25 @@ import { StartSessionModal } from './StartSessionModal'
 
 export function SessionsView() {
   const { sessionId } = useParams<{ sessionId?: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { data: sessions = [], isLoading } = useSessions()
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
+  const [creationDefaultAgentId, setCreationDefaultAgentId] = useState<string | undefined>()
+
+  // Open the creation modal when navigated here with `?createFor=<agentId>`,
+  // then strip the query so back/forward doesn't re-open it.
+  useEffect(() => {
+    const createFor = searchParams.get('createFor')
+    if (createFor) {
+      setCreationDefaultAgentId(createFor)
+      setCreating(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete('createFor')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const filtered = useMemo(
     () =>
@@ -25,7 +40,6 @@ export function SessionsView() {
 
   const selected = sessionId ? sessions.find((s) => s.id === sessionId) : null
 
-  // If a session is selected but not in the list anymore, drop the URL.
   useEffect(() => {
     if (sessionId && !isLoading && !selected) {
       navigate('/sessions', { replace: true })
@@ -42,8 +56,11 @@ export function SessionsView() {
         isLoading={isLoading}
         actionButton={{
           icon: IoAddOutline,
-          tooltip: 'Start Session',
-          onClick: () => setCreating(true),
+          tooltip: 'Create Session',
+          onClick: () => {
+            setCreationDefaultAgentId(undefined)
+            setCreating(true)
+          },
         }}
       >
         <SessionsList
@@ -59,13 +76,14 @@ export function SessionsView() {
         ) : (
           <NotFoundView
             entityType="Session"
-            message="Pick a session on the left or start a new one."
+            message="Pick a session on the left or create a new one."
           />
         )}
       </div>
 
       {creating && (
         <StartSessionModal
+          defaultAgentId={creationDefaultAgentId}
           onClose={() => setCreating(false)}
           onStarted={(s) => {
             setCreating(false)

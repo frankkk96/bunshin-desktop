@@ -5,8 +5,7 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tauri::{Emitter, Manager, RunEvent};
-use tauri_plugin_deep_link::DeepLinkExt;
+use tauri::{Manager, RunEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_store::StoreExt;
 
@@ -446,7 +445,6 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_decorum::init())
         .setup(move |app| {
             log::info!("=== Bunshin Application Started ===");
@@ -522,43 +520,9 @@ pub fn run() {
             // Claude subprocess manager: one DashMap of processes for the app's lifetime.
             app.manage(Arc::new(ClaudeSessionManager::new()));
 
-            #[cfg(any(windows, target_os = "linux"))]
-            {
-                let _ = app.deep_link().register("bunshin");
-            }
-
             #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
             {
                 let _ = fix_path_env::fix();
-            }
-
-            // Supabase OAuth deep-link callback (the app's user-account login).
-            let handle = app.handle().clone();
-            app.deep_link().on_open_url(move |event| {
-                for url in event.urls() {
-                    if url.scheme() == "bunshin" && url.host_str() == Some("oauth-callback") {
-                        if let Some(window) = handle.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            let _ = window.unminimize();
-                        }
-                        let _ = handle.emit("oauth-callback", url.as_str());
-                    }
-                }
-            });
-
-            if let Ok(Some(urls)) = app.deep_link().get_current() {
-                let handle = app.handle().clone();
-                for url in urls {
-                    if url.scheme() == "bunshin" && url.host_str() == Some("oauth-callback") {
-                        if let Some(window) = handle.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            let _ = window.unminimize();
-                        }
-                        let _ = handle.emit("oauth-callback", url.as_str());
-                    }
-                }
             }
 
             Ok(())
@@ -623,6 +587,7 @@ pub fn run() {
             stop_session,
             send_user_message,
             cancel_query,
+            clear_session,
             list_running_sessions,
         ])
         .build(tauri::generate_context!())

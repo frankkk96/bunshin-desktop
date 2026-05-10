@@ -1,12 +1,11 @@
 import {
   IoChatbubbleOutline,
-  IoPeopleOutline,
   IoChatbubble,
+  IoPeopleOutline,
   IoPeople,
-  IoPersonCircleOutline,
-  IoPersonCircle,
+  IoSettingsOutline,
+  IoSettings,
 } from 'react-icons/io5'
-import { MessageSquare, Bug } from 'lucide-react'
 import { useAppNavigation } from '@/components/common/Layout/useAppNavigation'
 import {
   MacOSTooltip,
@@ -14,13 +13,7 @@ import {
   MacOSTooltipContent,
   MacOSButton,
 } from '@/components/ui'
-import { useAuth } from '@/contexts/AuthProvider'
 import { UpdateIndicator } from '@/components/features/Updater/UpdateIndicator'
-import { openUrl } from '@tauri-apps/plugin-opener'
-import { testCrashAndSubmit } from '@/lib/core/utils/crash'
-import { useState } from 'react'
-import { toast } from '@/lib/core/utils/toast'
-import { ProxiedImage } from '@/components/common/Images/ProxiedImage'
 
 interface SidebarProps {
   activeTab: string
@@ -29,35 +22,6 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, onSettingsClick }: SidebarProps) {
   const { navigateToTab } = useAppNavigation()
-  const { user } = useAuth()
-  const [isTestingCrash, setIsTestingCrash] = useState(false)
-
-  const handleFeedbackClick = async () => {
-    try {
-      await openUrl('https://github.com/frankkk96/Bunshin-Release/issues')
-    } catch (error) {
-      console.error('Failed to open feedback URL:', error)
-    }
-  }
-
-  const handleTestCrashClick = async () => {
-    try {
-      setIsTestingCrash(true)
-      toast.info('Triggering test crash and reading logs...')
-
-      // 触发测试崩溃并读取日志
-      // 在开发环境中，不提交到后端，只在控制台显示
-      // 如果要提交到真实后端，传入 endpoint 参数
-      await testCrashAndSubmit('https://server.bunshin.app/telemetry/crash-reports')
-
-      toast.success('Crash report submitted successfully!')
-    } catch (error) {
-      console.error('Test crash failed:', error)
-      toast.error('Test failed: ' + (error as Error).message)
-    } finally {
-      setIsTestingCrash(false)
-    }
-  }
 
   const tabs = [
     {
@@ -67,8 +31,8 @@ export function Sidebar({ activeTab, onSettingsClick }: SidebarProps) {
       outlineIcon: IoChatbubbleOutline,
     },
     {
-      id: 'contacts',
-      label: 'Contacts',
+      id: 'agents',
+      label: 'Agents',
       icon: IoPeople,
       outlineIcon: IoPeopleOutline,
     },
@@ -105,7 +69,6 @@ export function Sidebar({ activeTab, onSettingsClick }: SidebarProps) {
         })}
       </nav>
 
-      {/* User Avatar / Settings */}
       <MacOSTooltip>
         <MacOSTooltipTrigger asChild>
           <div className="w-14 h-9 mb-2">
@@ -115,72 +78,20 @@ export function Sidebar({ activeTab, onSettingsClick }: SidebarProps) {
               className="w-full h-full rounded-xl"
               style={{ pointerEvents: 'auto' }}
             >
-              {user ? (
-                user.user_metadata?.avatar_url ? (
-                  <ProxiedImage
-                    src={user.user_metadata.avatar_url}
-                    alt={user.user_metadata?.full_name || user.email || 'User'}
-                    className="w-6 h-6 rounded-full object-cover"
-                  />
-                ) : activeTab === 'settings' ? (
-                  <IoPersonCircle size={20} />
-                ) : (
-                  <IoPersonCircleOutline size={20} />
-                )
+              {activeTab === 'settings' ? (
+                <IoSettings size={20} />
               ) : (
-                <IoPersonCircleOutline size={20} className="text-muted-foreground" />
+                <IoSettingsOutline size={20} />
               )}
             </MacOSButton>
           </div>
         </MacOSTooltipTrigger>
         <MacOSTooltipContent side="right" sideOffset={8}>
-          {user ? 'Profile & Settings' : 'Login'}
+          Settings
         </MacOSTooltipContent>
       </MacOSTooltip>
 
-      {/* Update Indicator */}
       <UpdateIndicator />
-
-      {/* Feedback Button */}
-      <MacOSTooltip>
-        <MacOSTooltipTrigger asChild>
-          <div className="w-14 h-9 mb-2">
-            <MacOSButton
-              onClick={handleFeedbackClick}
-              className="w-full h-full rounded-xl"
-              style={{ pointerEvents: 'auto' }}
-              variant="icon"
-            >
-              <MessageSquare size={20} />
-            </MacOSButton>
-          </div>
-        </MacOSTooltipTrigger>
-        <MacOSTooltipContent side="right" sideOffset={8}>
-          Submit Feedback
-        </MacOSTooltipContent>
-      </MacOSTooltip>
-
-      {/* Test Crash Button - Only in Development */}
-      {import.meta.env.DEV && (
-        <MacOSTooltip>
-          <MacOSTooltipTrigger asChild>
-            <div className="w-14 h-9 mb-2">
-              <MacOSButton
-                onClick={handleTestCrashClick}
-                disabled={isTestingCrash}
-                className="w-full h-full rounded-xl"
-                style={{ pointerEvents: 'auto' }}
-                variant="icon"
-              >
-                <Bug size={20} className={isTestingCrash ? 'animate-pulse' : ''} />
-              </MacOSButton>
-            </div>
-          </MacOSTooltipTrigger>
-          <MacOSTooltipContent side="right" sideOffset={8}>
-            {isTestingCrash ? 'Testing...' : 'Test Crash & Logs'}
-          </MacOSTooltipContent>
-        </MacOSTooltip>
-      )}
     </div>
   )
 }
