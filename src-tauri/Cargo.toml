@@ -5,12 +5,7 @@ description = "Bunshin App"
 authors = ["you"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "tauri_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
@@ -27,50 +22,32 @@ tauri-plugin-notification = "2"
 tauri-plugin-os = "2"
 tauri-plugin-http = "2"
 tauri-plugin-deep-link = "2"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-base64 = "0.22"
-reqwest = { version = "0.11", features = ["json", "stream", "multipart"] }
-chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.0", features = ["v4", "serde"] }
-thiserror = "1.0"
-tauri-plugin-cache = "0.1.5"
-sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite"] }
-fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
-
-# Additional dependencies for new modules
-tokio = { version = "1", features = ["full"] }
-tokio-util = "0.7"
-futures-util = "0.3"
-openai-api-rs = "8.0"
-anyhow = "1.0"
-rand = "0.8"
-nanoid = "0.4"
-dashmap = "5.5"
-regex = "1.10"
-url = "2.5"
-lazy_static = "1.4"
-
-# Encryption dependencies - using mature library
-age = "0.10"  # Simple, secure file encryption
-dirs = "5.0"
-
-# MCP SDK - upgraded to support Streamable HTTP transport with built-in OAuth
-rmcp = { version = "0.8.3", features = [
-    "transport-child-process",
-    "transport-streamable-http-client",
-    "transport-streamable-http-client-reqwest",
-    "reqwest",
-    "client",
-    "auth"  # Enable built-in OAuth 2.1 + PKCE support
-] }
-tauri-plugin-shell = "2.3.1"
 tauri-plugin-process = "2"
 tauri-plugin-decorum = "1.1.1"
 tauri-plugin-log = "2"
+tauri-plugin-cache = "0.1.5"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+reqwest = { version = "0.11", features = ["json", "stream"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+thiserror = "1.0"
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite"] }
+fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
+
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+futures-util = "0.3"
+anyhow = "1.0"
+dashmap = "5.5"
 log = "0.4"
-oauth2 = "5.0.0"
 open = "5.3.2"
+
+# Age-encrypted secure storage for provider API keys
+age = "0.10"
+dirs = "5.0"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"

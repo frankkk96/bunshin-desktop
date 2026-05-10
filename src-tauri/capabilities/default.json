@@ -47,16 +47,6 @@
     "fs:allow-mkdir",
     "fs:allow-read-dir",
     "fs:allow-remove",
-    "shell:allow-stdin-write",
-    "shell:allow-kill",
-    "shell:allow-open",
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        { "name": "npx-mcp", "cmd": "npx", "args": true },
-        { "name": "uv-mcp", "cmd": "uv", "args": true }
-      ]
-    },
     {
       "identifier": "fs:allow-read-file",
       "allow": [

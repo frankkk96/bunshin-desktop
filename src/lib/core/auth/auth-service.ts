@@ -1,17 +1,12 @@
 // Third-party imports
 import { Session, User } from '@supabase/supabase-js'
-import { type Middleware } from 'openapi-fetch'
-import createFetchClient from 'openapi-fetch'
-import createClient, { OpenapiQueryClient } from 'openapi-react-query'
 
 // Internal imports
 import { supabase, initializeSupabase } from '@/lib/core/auth/supabase'
 import { logger } from '@/lib/core/utils/logger'
 import { handleAuthError, handleRuntimeError } from '@/lib/core/utils/error'
-import { paths } from '@/types/api'
 import { app } from '@/lib/tauri/system/app'
 import { tauriEventBus } from '@/lib/tauri/system/events'
-import { BASE_URL } from '@/config'
 
 export type AuthResult = {
   error: Error | null
@@ -45,17 +40,7 @@ class AuthService {
   private subscription: any = null
   private unlistenOAuth: (() => void) | null = null
   private initialized = false
-  private fetchClient: ReturnType<typeof createFetchClient<paths>>
-  private apiClient: OpenapiQueryClient<paths>
 
-  constructor() {
-    this.fetchClient = createFetchClient<paths>({
-      baseUrl: BASE_URL,
-    })
-    this.apiClient = createClient(this.fetchClient)
-  }
-
-  // State management
   private setState(updates: Partial<AuthState>) {
     this.state = { ...this.state, ...updates }
     this.listeners.forEach((listener) => listener(updates))
@@ -70,19 +55,16 @@ class AuthService {
     return { ...this.state }
   }
 
-  // Initialization
   async initialize(): Promise<void> {
     if (this.initialized) return
 
     this.setState({ loading: false })
 
     try {
-      // Initialize Supabase
       const client = await initializeSupabase()
       this.isSupabaseReady = !!client
 
       if (client && supabase.auth) {
-        // Get initial session
         const {
           data: { session },
         } = await supabase.auth.getSession()
@@ -91,7 +73,6 @@ class AuthService {
           user: session?.user ?? null,
         })
 
-        // Set up auth state listener
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -102,7 +83,6 @@ class AuthService {
         })
         this.subscription = subscription
 
-        // Set up OAuth listener
         await this.setupOAuthListener()
       } else {
         logger.info('Supabase not configured, auth features disabled')
@@ -115,7 +95,6 @@ class AuthService {
     }
   }
 
-  // OAuth deeplink listener（需要真正的跨进程通信，从 Rust 后端接收 OAuth 回调）
   private async setupOAuthListener(): Promise<void> {
     this.unlistenOAuth = await tauriEventBus.listen<string>('oauth-callback', async (event) => {
       const url = event.payload
@@ -139,16 +118,12 @@ class AuthService {
   }
 
   private async processOAuthCallback(url: string): Promise<void> {
-    // Extract OAuth parameters from the deeplink URL
     const urlObj = new URL(url)
 
-    // OAuth parameters can be in either query string OR hash fragment
     let params: URLSearchParams
     if (urlObj.hash && urlObj.hash.length > 1) {
-      // Hash-based parameters (Google implicit flow)
       params = new URLSearchParams(urlObj.hash.substring(1))
     } else {
-      // Query string parameters (authorization code flow)
       params = new URLSearchParams(urlObj.search)
     }
 
@@ -176,7 +151,6 @@ class AuthService {
       return
     }
 
-    // Try different OAuth flows
     if (access_token && refresh_token) {
       await this.handleTokenBasedAuth(access_token, refresh_token)
     } else if (access_token && !refresh_token) {
@@ -209,7 +183,6 @@ class AuthService {
     }
 
     if (data.session) {
-      logger.info('OAuth login successful', { user: data.session.user })
       this.setState({
         session: data.session,
         user: data.session.user,
@@ -226,7 +199,6 @@ class AuthService {
       if (userError) {
         handleAuthError(userError, { message: 'Failed to get OAuth user', silent: true })
       } else if (userData.user) {
-        // Create a minimal session object
         const session = {
           access_token,
           refresh_token: '',
@@ -264,7 +236,6 @@ class AuthService {
     }
 
     if (data.session) {
-      logger.info('OAuth login successful', { user: data.session.user })
       this.setState({
         session: data.session,
         user: data.session.user,
@@ -274,7 +245,6 @@ class AuthService {
     }
   }
 
-  // Authentication methods
   async signInWithEmail(email: string): Promise<AuthResult> {
     if (!this.isSupabaseReady || !supabase.auth) {
       return { error: new Error('Supabase not configured'), success: false }
@@ -348,12 +318,10 @@ class AuthService {
   }
 
   async requireAuth(): Promise<boolean> {
-    // If user already exists, return true directly
     if (this.state.user) {
       return true
     }
 
-    // Check if there's a valid session
     if (!this.isSupabaseReady || !supabase.auth) {
       return false
     }
@@ -376,26 +344,6 @@ class AuthService {
     return false
   }
 
-  // API utilities
-  get authMiddleware(): Middleware {
-    const self = this
-    return {
-      async onRequest({ request }) {
-        request.headers.set('Authorization', `Bearer ${self.state.session?.access_token}`)
-        return request
-      },
-    }
-  }
-
-  get apis(): OpenapiQueryClient<paths> {
-    return this.apiClient
-  }
-
-  get baseUrl(): string {
-    return BASE_URL
-  }
-
-  // Cleanup
   destroy(): void {
     if (this.subscription) {
       this.subscription.unsubscribe()
@@ -408,5 +356,4 @@ class AuthService {
   }
 }
 
-// Export singleton instance
 export const authService = new AuthService()

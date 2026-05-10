@@ -1,113 +1,63 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { useAppNavigation } from '@/components/common/Layout/useAppNavigation'
-import { SidebarContainer } from '@/components/common'
-import { IoPersonAddOutline } from 'react-icons/io5'
-import { useAllAgents } from '@/hooks/contacts/agents/query'
-import { useAgentMutations } from '@/hooks/contacts/agents/mutations'
-import { Agent } from '@/lib/core/agent/types'
-import { agentId } from '@/lib/core/utils/random'
-import { ContactList } from './ContactList'
-import { ContactDetail } from './ContactDetail'
-import { AgentCreationModal, AgentCreationData } from './AgentCreationModal'
-import { handleRuntimeError } from '@/lib/core/utils/error'
+import { useNavigate, useParams } from 'react-router-dom'
+import { IoAddOutline } from 'react-icons/io5'
+import { SidebarContainer, NotFoundView } from '@/components/common'
+import { useAgents } from '@/hooks/agents'
+import { ContactsList } from './ContactsList'
+import { AgentDetail } from './AgentDetail'
+import { AgentCreationModal } from './AgentCreationModal'
 
 export function ContactsView() {
   const { contactId } = useParams<{ contactId?: string }>()
-  const { navigateToContact } = useAppNavigation()
+  const navigate = useNavigate()
+  const { data: agents = [], isLoading } = useAgents()
+  const [search, setSearch] = useState('')
+  const [creating, setCreating] = useState(false)
 
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const { isLoading } = useAllAgents()
-  const { createAgent } = useAgentMutations()
+  const filtered = agents.filter((a) =>
+    a.alias.toLowerCase().includes(search.toLowerCase()),
+  )
 
-  const handleSelectContact = (id: string | null) => {
-    navigateToContact(id || undefined)
-  }
-
-  const handleCreateAgent = (data: AgentCreationData) => {
-    const newAgent: Agent = {
-      id: agentId(),
-      alias: data.name,
-      description: `${data.providerName} | ${data.modelName}`,
-      pinned: false,
-      llm: {
-        providerId: data.providerId,
-        modelId: data.modelId,
-      },
-      prompt: {
-        systemPrompt: '',
-        shortcuts: [],
-      },
-      extension: {
-        mcpServers: [],
-        skipPermission: false,
-      },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    }
-
-    createAgent.mutate(newAgent, {
-      onSuccess: () => {
-        setIsCreateModalOpen(false)
-        navigateToContact(newAgent.id)
-      },
-      onError: (error) => {
-        handleRuntimeError(error, { message: 'Failed to create agent' })
-      },
-    })
-  }
+  const selected = contactId ? agents.find((a) => a.id === contactId) : null
 
   return (
-    <>
-      <div className="flex h-full overflow-hidden rounded-br-xl">
-        {/* Contact List Panel */}
-        <div className="relative h-full">
-          <SidebarContainer
-            title="Contacts"
-            headerIcon={<IoPersonAddOutline size={18} />}
-            headerIconTooltip="New contact"
-            onHeaderIconClick={() => setIsCreateModalOpen(true)}
-            searchPlaceholder="Search contacts..."
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-          >
-            <ContactList
-              searchValue={searchQuery}
-              selectedContactId={contactId || null}
-              onSelectContact={handleSelectContact}
-            />
-          </SidebarContainer>
-        </div>
+    <div className="flex h-full">
+      <SidebarContainer
+        title="Contacts"
+        searchPlaceholder="Search agents"
+        searchValue={search}
+        onSearchChange={setSearch}
+        isLoading={isLoading}
+        actionButton={{
+          icon: IoAddOutline,
+          tooltip: 'New Agent',
+          onClick: () => setCreating(true),
+        }}
+      >
+        <ContactsList
+          agents={filtered}
+          selectedId={contactId}
+          onSelect={(id) => navigate(`/contacts/${id}`)}
+        />
+      </SidebarContainer>
 
-        {/* Contact Detail Panel */}
-        <div className="flex-1 overflow-hidden bg-background">
-          {contactId ? (
-            <ContactDetail contactId={contactId} />
-          ) : (
-            <div className="h-full flex items-center justify-center flex-col gap-4 text-muted-foreground">
-              <div className="text-lg font-semibold">
-                {isLoading ? 'Loading contacts...' : 'No contacts found'}
-              </div>
-              <div className="text-sm">
-                {isLoading
-                  ? 'Please wait...'
-                  : searchQuery
-                    ? 'Try adjusting your search'
-                    : 'Create your first contact to get started'}
-              </div>
-            </div>
-          )}
-        </div>
+      <div className="flex-1 overflow-hidden">
+        {selected ? (
+          <AgentDetail agent={selected} />
+        ) : (
+          <NotFoundView entityType="Agent" message="Pick an agent on the left to inspect or edit." />
+        )}
       </div>
 
-      {/* Agent Creation Modal */}
-      <AgentCreationModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onConfirm={handleCreateAgent}
-        isCreating={createAgent.isPending}
-      />
-    </>
+      {creating && (
+        <AgentCreationModal
+          onClose={() => setCreating(false)}
+          onCreated={(agent) => {
+            setCreating(false)
+            navigate(`/contacts/${agent.id}`)
+          }}
+        />
+      )}
+    </div>
   )
 }

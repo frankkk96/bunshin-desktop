@@ -54,10 +54,5 @@ export function useAuth() {
     signInWithGoogle,
     signOut,
     requireAuth,
-
-    // API utilities
-    authMiddleware: authService.authMiddleware,
-    baseUrl: authService.baseUrl,
-    apis: authService.apis,
   }
 }

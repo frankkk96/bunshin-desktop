@@ -61,8 +61,8 @@ export function Sidebar({ activeTab, onSettingsClick }: SidebarProps) {
 
   const tabs = [
     {
-      id: 'chats',
-      label: 'Chats',
+      id: 'sessions',
+      label: 'Sessions',
       icon: IoChatbubble,
       outlineIcon: IoChatbubbleOutline,
     },

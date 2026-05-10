@@ -29,7 +29,7 @@ async function initApp() {
 
 function MainLayoutContent() {
   const location = useLocation()
-  const activeTab = location.pathname.split('/')[1] || 'chats'
+  const activeTab = location.pathname.split('/')[1] || 'sessions'
   const initRef = useRef(false)
 
   useEffect(() => {

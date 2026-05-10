@@ -1,5 +1,1 @@
-export { ContactDetail } from './ContactDetail'
-export { ContactItem } from './ContactItem'
-export { ContactList } from './ContactList'
 export { ContactsView } from './ContactsView'
-export { GroupItem } from '../Groups/GroupItem'
