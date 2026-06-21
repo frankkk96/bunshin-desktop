@@ -190,10 +190,15 @@ jobs:
         run: |
           set -euo pipefail
           BASE_URL="https://github.com/${{ env.RELEASE_REPO }}/releases/download/$TAG_NAME"
-          APP_TAR_GZ=$(find src-tauri/target -name "*.app.tar.gz" | head -n1 | xargs basename)
-          SIG_FILE="${APP_TAR_GZ}.sig"
+          # -print -quit stops find after the first match itself, avoiding the
+          # `find | head` SIGPIPE that fails the step under `set -o pipefail`.
+          APP_TAR_PATH=$(find src-tauri/target -name "*.app.tar.gz" -print -quit)
+          if [ -z "$APP_TAR_PATH" ]; then echo "::error::No *.app.tar.gz found"; exit 1; fi
+          SIG_PATH="${APP_TAR_PATH}.sig"
+          if [ ! -f "$SIG_PATH" ]; then echo "::error::Missing signature: $SIG_PATH"; exit 1; fi
+          APP_TAR_GZ=$(basename "$APP_TAR_PATH")
           DARWIN_URL="$BASE_URL/$APP_TAR_GZ"
-          DARWIN_SIG=$(find src-tauri/target -name "$SIG_FILE" -exec cat {} \; | tr -d '\n')
+          DARWIN_SIG=$(tr -d '\n' < "$SIG_PATH")
           echo "darwin_url=$DARWIN_URL" >> $GITHUB_OUTPUT
           echo "darwin_sig=$DARWIN_SIG" >> $GITHUB_OUTPUT
 
@@ -327,10 +332,9 @@ jobs:
 
           # Fail loudly if any URL/signature is empty — a half-populated manifest
           # would silently break updates for that platform.
-          for pair in "$DARWIN_URL:darwin url" "$DARWIN_SIG:darwin sig" \
-                      "$WINDOWS_URL:windows url" "$WINDOWS_SIG:windows sig"; do
-            val="${pair%%:*}"
-            if [ -z "$val" ]; then echo "Empty ${pair#*:} in manifest" >&2; exit 1; fi
-          done
+          [ -n "$DARWIN_URL" ]  || { echo "::error::empty darwin_url";  exit 1; }
+          [ -n "$DARWIN_SIG" ]  || { echo "::error::empty darwin_sig";  exit 1; }
+          [ -n "$WINDOWS_URL" ] || { echo "::error::empty windows_url"; exit 1; }
+          [ -n "$WINDOWS_SIG" ] || { echo "::error::empty windows_sig"; exit 1; }
 
           gh release upload "$TAG_NAME" latest.json --clobber --repo "${{ env.RELEASE_REPO }}"
