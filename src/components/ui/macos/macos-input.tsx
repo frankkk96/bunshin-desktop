@@ -11,7 +11,7 @@ export const MacOSInput = forwardRef<HTMLInputElement, MacOSInputProps>(
       <input
         ref={ref}
         className={cn(
-          'w-full px-2.5 py-1.5 text-xs rounded-md border-[1px] outline-none',
+          'w-full h-8 px-3 text-sm rounded-md border-[1px] outline-none',
           'bg-muted text-foreground placeholder:text-muted-foreground',
           error
             ? 'border-destructive focus:ring-1 focus:ring-destructive'

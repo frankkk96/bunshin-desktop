@@ -37,7 +37,7 @@ export function SettingSelect({
   return (
     <div
       className={cn(
-        'relative flex items-center text-sm py-1 px-2 rounded-md h-8',
+        'relative flex items-center text-sm px-3 rounded-md h-8',
         'bg-transparent hover:bg-accent',
         disabled && 'opacity-50 cursor-not-allowed hover:bg-transparent',
         className,

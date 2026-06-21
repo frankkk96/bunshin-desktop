@@ -25,11 +25,11 @@ function MacOSSelectTrigger({
     <SelectPrimitive.Trigger
       className={cn(
         'flex w-fit items-center justify-between gap-2 rounded-md border border-border bg-muted',
-        'px-3 py-2 text-sm whitespace-nowrap outline-none',
+        'px-3 text-sm whitespace-nowrap outline-none',
         'text-foreground placeholder:text-muted-foreground',
         'focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-        size === 'default' && 'h-9',
-        size === 'sm' && 'h-8',
+        size === 'default' && 'h-8',
+        size === 'sm' && 'h-7',
         className,
       )}
       {...props}

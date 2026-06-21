@@ -292,7 +292,7 @@ export function SignInButton({ providerId }: { providerId: string }) {
     }
   }
   return (
-    <MacOSButton size="sm" variant="outline" onClick={handle} disabled={signIn.isPending}>
+    <MacOSButton variant="outline" onClick={handle} disabled={signIn.isPending}>
       <LogIn size={13} className="mr-1.5" />
       {signIn.isPending ? 'Opening…' : 'Sign in'}
     </MacOSButton>

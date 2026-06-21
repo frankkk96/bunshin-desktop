@@ -182,7 +182,7 @@ export function GeneralSection() {
               { value: 'dark', label: 'Dark' },
               { value: 'system', label: 'System' },
             ]}
-            className="text-sm bg-background py-1 px-2 rounded-md"
+            className="text-sm"
           />
         </SettingRow>
 
@@ -200,7 +200,7 @@ export function GeneralSection() {
               // { value: 'ja', label: '日本語' },
               // { value: 'ko', label: '한국어' },
             ]}
-            className="text-sm bg-background py-1 px-2 rounded-md"
+            className="text-sm"
           />
         </SettingRow>
       </SettingSection>
@@ -245,7 +245,6 @@ export function GeneralSection() {
               onClick={handleTestProxy}
               disabled={testStatus === 'testing' || !proxyUrl.trim()}
               variant="outline"
-              size="sm"
               className={cn(
                 'flex items-center gap-1.5',
                 testStatus === 'success' &&
@@ -269,7 +268,6 @@ export function GeneralSection() {
           <MacOSButton
             onClick={handleExportData}
             disabled={isExporting}
-            size="sm"
             variant="outline"
           >
             {isExporting ? (
@@ -294,7 +292,7 @@ export function GeneralSection() {
           title="Submit Feedback"
           description="Open the GitHub issue tracker"
         >
-          <MacOSButton onClick={handleFeedbackClick} size="sm" variant="outline">
+          <MacOSButton onClick={handleFeedbackClick} variant="outline">
             Open
           </MacOSButton>
         </SettingRow>
@@ -310,7 +308,6 @@ export function GeneralSection() {
               <MacOSButton
                 onClick={handleTestCrashClick}
                 disabled={isTestingCrash}
-                size="sm"
                 variant="outline"
               >
                 {isTestingCrash ? (

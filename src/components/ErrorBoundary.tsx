@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
 import { CrashReporting } from '@/lib/core/crash-reporting'
 import { logger } from '@/lib/core/utils/logger'
+import { MacOSButton } from '@/components/ui'
 
 interface Props {
   children: ReactNode
@@ -118,27 +119,26 @@ export class ErrorBoundary extends Component<Props, State> {
               )}
 
               <div className="space-y-3">
-                <button
-                  onClick={this.handleRetry}
-                  className="w-full bg-primary text-primary-foreground px-4 py-3 rounded-lg text-sm font-medium hover:bg-primary/90"
-                >
+                <MacOSButton onClick={this.handleRetry} className="w-full">
                   Try Again
-                </button>
+                </MacOSButton>
 
-                <button
+                <MacOSButton
+                  variant="outline"
                   onClick={this.handleReload}
-                  className="w-full bg-secondary text-secondary-foreground px-4 py-3 rounded-lg text-sm font-medium hover:bg-secondary/80"
+                  className="w-full"
                 >
                   Reload Application
-                </button>
+                </MacOSButton>
 
                 {(import.meta.env.DEV || this.state.errorId) && (
-                  <button
+                  <MacOSButton
+                    variant="ghost"
                     onClick={this.handleReportDetails}
-                    className="w-full bg-muted text-muted-foreground px-4 py-3 rounded-lg text-xs hover:bg-muted/80"
+                    className="w-full"
                   >
                     Copy Debug Information
-                  </button>
+                  </MacOSButton>
                 )}
               </div>
 

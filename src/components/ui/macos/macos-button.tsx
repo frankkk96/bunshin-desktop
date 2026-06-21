@@ -13,16 +13,17 @@ export const MacOSButton = forwardRef<HTMLButtonElement, MacOSButtonProps>(
 
     const variantStyles = {
       default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-      outline: 'bg-transparent border border-border hover:bg-background',
-      ghost: 'bg-transparent hover:bg-background',
+      outline: 'bg-transparent border border-border hover:bg-accent',
+      ghost: 'bg-transparent hover:bg-accent',
       destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
       icon: 'bg-transparent hover:bg-accent active:bg-accent',
     }
 
     const sizeStyles = {
-      sm: 'h-8 px-3 text-xs',
-      md: 'h-9 px-4 text-sm',
-      lg: 'h-10 px-5 text-base',
+      // Standard control height is 32px (h-8) to match inputs/selects.
+      sm: 'h-7 px-2.5 text-xs',
+      md: 'h-8 px-3.5 text-sm',
+      lg: 'h-9 px-4 text-sm',
     }
 
     const iconSizeStyles = {

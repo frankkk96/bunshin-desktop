@@ -51,7 +51,6 @@ export function ProvidersSection() {
         )}
 
         <MacOSButton
-          size="sm"
           variant="outline"
           onClick={() => setEditing('new')}
           className="w-full justify-center"
@@ -281,7 +280,6 @@ function ProviderEditor({
                 {' '}with the right <code className="px-1 py-0.5 rounded bg-muted text-[10px]">CLAUDE_CONFIG_DIR</code>.
               </div>
               <MacOSButton
-                size="sm"
                 variant="outline"
                 onClick={handleSignIn}
                 disabled={signIn.isPending}

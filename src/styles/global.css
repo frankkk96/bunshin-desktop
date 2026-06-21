@@ -4,33 +4,34 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff; /* primary background color */
-  --foreground: #0a0a0a;
+  /* Light theme — native macOS / Apple system palette */
+  --background: #ffffff; /* content background */
+  --foreground: #1d1d1f; /* primary label (Apple near-black) */
 
-  --popover: #e2e3e4; /* popover, modal color */
-  --popover-foreground: #0a0a0a;
+  --popover: #ffffff; /* menus & sheets are white in macOS */
+  --popover-foreground: #1d1d1f;
 
-  --primary: #171717;
-  --primary-foreground: #fafafa;
+  --primary: #1d1d1f;
+  --primary-foreground: #ffffff;
 
-  --secondary: #e2e3e4; /* sidebar color */
-  --secondary-foreground: #171717;
+  --secondary: #f5f5f7; /* sidebar / list column (systemGray light) */
+  --secondary-foreground: #1d1d1f;
 
-  --muted: #dfdfe0; /* input, textarea color */
-  --muted-foreground: #737373;
+  --muted: #f0f0f2; /* input, textarea color */
+  --muted-foreground: #6e6e73; /* secondary label */
 
-  --input: #f2f2f2;
+  --input: #f5f5f7;
 
-  --accent: #d8d9da; /* accent color, btn hover */
-  --accent-foreground: #171717;
+  --accent: #e8e8ed; /* selection / btn hover (systemGray5) */
+  --accent-foreground: #1d1d1f;
 
-  --destructive: #e7000b;
+  --destructive: #ff3b30; /* systemRed light */
   --destructive-foreground: #ffffff;
 
-  --border: #d1d1d6;
-  --ring: #707070;
+  --border: #d2d2d7; /* separator */
+  --ring: #007aff; /* blue focus ring */
   --radius: 0.625rem;
-  --interactive: #007aff;
+  --interactive: #007aff; /* systemBlue light */
 }
 
 .dark {
