@@ -245,10 +245,11 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $BASE_URL = "https://github.com/${{ env.RELEASE_REPO }}/releases/download/$env:TAG_NAME"
-          # Prefer MSI installer
-          $artifact = Get-ChildItem -Path src-tauri/target -Recurse -Filter *.msi | Select-Object -First 1
+          # Updater artifact: the NSIS installer zip (*-setup.nsis.zip), NOT the
+          # bare .msi installer. installMode=passive consumes this archive + its .sig.
+          $artifact = Get-ChildItem -Path src-tauri/target -Recurse -Filter *.nsis.zip | Select-Object -First 1
           if (-not $artifact) {
-            Write-Error 'No MSI installer found.'
+            Write-Error 'No NSIS updater artifact (*.nsis.zip) found. Ensure bundle.createUpdaterArtifacts is true and the nsis target is built.'
           }
           $FILE_NAME = $artifact.Name
           $SIG_PATH = "$($artifact.FullName).sig"
@@ -256,38 +257,65 @@ jobs:
           if (Test-Path $SIG_PATH) {
             $WIN_SIG = (Get-Content -Raw $SIG_PATH).Trim()
           } else {
-            $WIN_SIG = ''
+            Write-Error "Missing signature file: $SIG_PATH"
           }
           echo "windows_url=$WIN_URL" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           echo "windows_sig=$WIN_SIG" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-  # 4) Notify update server
-  notify-update-server:
+  # 4) Publish the static updater manifest (latest.json) to the release.
+  #    Serverless auto-update: the app polls
+  #    https://github.com/<RELEASE_REPO>/releases/latest/download/latest.json
+  #    which always resolves to the newest non-draft, non-prerelease release.
+  publish-manifest:
     needs: [build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
-      - name: Send update notification
+      - name: Build & upload latest.json
         env:
-          VERSION: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
           NOTES: ${{ github.event.head_commit.message }}
           DARWIN_URL: ${{ needs.build-macos.outputs.darwin_url }}
           DARWIN_SIG: ${{ needs.build-macos.outputs.darwin_sig }}
           WINDOWS_URL: ${{ needs.build-windows.outputs.windows_url }}
           WINDOWS_SIG: ${{ needs.build-windows.outputs.windows_sig }}
-          UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
         run: |
           set -euo pipefail
-          JSON=$(jq -n \
+          # Tauri compares the manifest version against the app's semver (no 'v').
+          VERSION="${TAG_NAME#v}"
+          NOTES="${NOTES:-Bunshin $TAG_NAME}"
+          PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          # macOS build is a universal binary, so the same .app.tar.gz serves both arches.
+          jq -n \
             --arg v "$VERSION" \
             --arg notes "$NOTES" \
+            --arg pub "$PUB_DATE" \
             --arg durl "$DARWIN_URL" \
             --arg dsg "$DARWIN_SIG" \
             --arg wurl "$WINDOWS_URL" \
             --arg wsg "$WINDOWS_SIG" \
-            '{version:$v, notes:$notes, darwin_url:$durl, darwin_sig:$dsg, windows_url:$wurl, windows_sig:$wsg}')
-          echo "$JSON" | jq .
-            curl -X POST "https://server.bunshin.app/telemetry/update" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $UPDATE_TOKEN" \
-            -d "$JSON" \
-              --fail --show-error
+            '{
+              version: $v,
+              notes: $notes,
+              pub_date: $pub,
+              platforms: {
+                "darwin-aarch64": { url: $durl, signature: $dsg },
+                "darwin-x86_64":  { url: $durl, signature: $dsg },
+                "windows-x86_64": { url: $wurl, signature: $wsg }
+              }
+            }' > latest.json
+
+          echo "::group::latest.json"
+          cat latest.json
+          echo "::endgroup::"
+
+          # Fail loudly if any URL/signature is empty — a half-populated manifest
+          # would silently break updates for that platform.
+          for pair in "$DARWIN_URL:darwin url" "$DARWIN_SIG:darwin sig" \
+                      "$WINDOWS_URL:windows url" "$WINDOWS_SIG:windows sig"; do
+            val="${pair%%:*}"
+            if [ -z "$val" ]; then echo "Empty ${pair#*:} in manifest" >&2; exit 1; fi
+          done
+
+          gh release upload "$TAG_NAME" latest.json --clobber --repo "${{ env.RELEASE_REPO }}"

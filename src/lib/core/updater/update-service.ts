@@ -66,7 +66,7 @@ class UpdateService {
         platform: currentPlatform,
         arch: currentArch,
         target,
-        endpoint: `https://server.bunshin.app/telemetry/updates/check?current_version=${currentVersion}&target=${target}`,
+        endpoint: 'https://github.com/frankkk96/Bunshin-Release/releases/latest/download/latest.json',
         details:
           error instanceof Error
             ? {
@@ -205,7 +205,7 @@ class UpdateService {
         platform: currentPlatform,
         arch: currentArch,
         target,
-        endpoint: `https://server.bunshin.app/telemetry/updates/check?current_version=${currentVersion}&target=${target}`,
+        endpoint: 'https://github.com/frankkk96/Bunshin-Release/releases/latest/download/latest.json',
       })
       return false
     }

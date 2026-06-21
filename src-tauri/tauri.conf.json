@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Bunshin",
-  "version": "0.3.5",
+  "version": "0.5.0",
   "identifier": "app.bunshin",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -21,9 +21,12 @@
     "http": null,
     "updater": {
       "endpoints": [
-        "https://server.bunshin.app/telemetry/check-updates?current_version={{current_version}}&target={{target}}-{{arch}}"
+        "https://github.com/frankkk96/Bunshin-Release/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwM0NGN0YzMUIwN0Q5RTYKUldUbTJRY2I4L2M4a0QzSUErcnZMQmhHODd5cTRlWDNVMzMyTGJ2dlBqNUp2VytjNWdHZFlEYlEK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwM0NGN0YzMUIwN0Q5RTYKUldUbTJRY2I4L2M4a0QzSUErcnZMQmhHODd5cTRlWDNVMzMyTGJ2dlBqNUp2VytjNWdHZFlEYlEK",
+      "windows": {
+        "installMode": "passive"
+      }
     },
     "process": null
   },
