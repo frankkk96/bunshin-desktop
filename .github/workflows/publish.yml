@@ -245,11 +245,12 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $BASE_URL = "https://github.com/${{ env.RELEASE_REPO }}/releases/download/$env:TAG_NAME"
-          # Updater artifact: the NSIS installer zip (*-setup.nsis.zip), NOT the
-          # bare .msi installer. installMode=passive consumes this archive + its .sig.
-          $artifact = Get-ChildItem -Path src-tauri/target -Recurse -Filter *.nsis.zip | Select-Object -First 1
+          # Windows updater artifact: the NSIS installer (*-setup.exe) + its .sig.
+          # Tauri v2 signs the installer directly (there is no .nsis.zip); the app
+          # runs it with installMode=passive on update.
+          $artifact = Get-ChildItem -Path src-tauri/target -Recurse -Filter *-setup.exe | Where-Object { $_.Name -notlike '*.sig' } | Select-Object -First 1
           if (-not $artifact) {
-            Write-Error 'No NSIS updater artifact (*.nsis.zip) found. Ensure bundle.createUpdaterArtifacts is true and the nsis target is built.'
+            Write-Error 'No NSIS updater artifact (*-setup.exe) found. Ensure bundle.createUpdaterArtifacts is true and the nsis target is built.'
           }
           $FILE_NAME = $artifact.Name
           $SIG_PATH = "$($artifact.FullName).sig"
