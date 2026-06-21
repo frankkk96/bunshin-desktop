@@ -1,6 +1,44 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+/// How the agent treats tool-permission prompts. Set per agent.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum PermissionMode {
+    #[serde(rename = "default")]
+    Default,
+    #[serde(rename = "acceptEdits")]
+    AcceptEdits,
+    #[serde(rename = "plan")]
+    Plan,
+    #[serde(rename = "bypassPermissions")]
+    BypassPermissions,
+    #[serde(rename = "dontAsk")]
+    DontAsk,
+}
+
+impl PermissionMode {
+    pub fn as_cli_flag(&self) -> &'static str {
+        match self {
+            PermissionMode::Default => "default",
+            PermissionMode::AcceptEdits => "acceptEdits",
+            PermissionMode::Plan => "plan",
+            PermissionMode::BypassPermissions => "bypassPermissions",
+            PermissionMode::DontAsk => "dontAsk",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "default" => Some(Self::Default),
+            "acceptEdits" => Some(Self::AcceptEdits),
+            "plan" => Some(Self::Plan),
+            "bypassPermissions" => Some(Self::BypassPermissions),
+            "dontAsk" => Some(Self::DontAsk),
+            _ => None,
+        }
+    }
+}
+
 /// A single environment variable injected into the claude subprocess via the
 /// merged settings.json `env` block.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +115,8 @@ pub struct DbAgent {
     pub description: Option<String>,
     pub avatar: Option<String>,
     pub base_url: Option<String>,
+    pub cwd: String,
+    pub permission_mode: String,
     pub config: String,
     pub created_at: i64,
     pub updated_at: i64,
@@ -94,6 +134,9 @@ pub struct Agent {
     /// Custom Anthropic-compatible base URL (empty → api.anthropic.com).
     #[serde(default)]
     pub base_url: Option<String>,
+    /// Working directory for every conversation under this agent.
+    pub cwd: String,
+    pub permission_mode: PermissionMode,
     #[serde(default)]
     pub config: AgentConfig,
     pub created_at: i64,
@@ -108,6 +151,9 @@ impl From<DbAgent> for Agent {
             description: db.description,
             avatar: db.avatar,
             base_url: db.base_url,
+            cwd: db.cwd,
+            permission_mode: PermissionMode::parse(&db.permission_mode)
+                .unwrap_or(PermissionMode::Default),
             config: AgentConfig::from_json(&db.config),
             created_at: db.created_at,
             updated_at: db.updated_at,

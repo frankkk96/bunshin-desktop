@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/ui/utils'
 
 interface SheetProps {
@@ -85,6 +86,13 @@ export function Sheet({
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        >
+          <X size={16} />
+        </button>
         {children}
       </div>
     </div>,

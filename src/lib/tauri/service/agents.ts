@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import type { Agent, AgentConfig } from '@/lib/types'
+import type { Agent, AgentConfig, PermissionMode } from '@/lib/types'
 
 export const agentsApi = {
   list: () => invoke<Agent[]>('list_agents'),
@@ -9,6 +9,8 @@ export const agentsApi = {
     description: string | null
     avatar: string | null
     baseUrl: string | null
+    cwd: string
+    permissionMode: PermissionMode
     apiKey?: string
     config?: AgentConfig
   }) => invoke<Agent>('create_agent', { input }),
@@ -18,6 +20,8 @@ export const agentsApi = {
     description: string | null
     avatar: string | null
     baseUrl: string | null
+    cwd: string
+    permissionMode: PermissionMode
     // Empty/undefined leaves the stored key untouched.
     apiKey?: string
     // Omit to preserve the stored config; pass to replace it.
@@ -28,4 +32,5 @@ export const agentsApi = {
   setApiKey: (agentId: string, apiKey: string) =>
     invoke<void>('set_agent_api_key', { agentId, apiKey }),
   hasApiKey: (agentId: string) => invoke<boolean>('has_agent_api_key', { agentId }),
+  getApiKey: (agentId: string) => invoke<string | null>('get_agent_api_key', { agentId }),
 }

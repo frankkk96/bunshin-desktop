@@ -144,7 +144,7 @@ export function SidebarContainer({
                 placeholder={searchPlaceholder}
                 value={currentSearchValue}
                 onChange={(e) => onSearchChange?.(e.target.value)}
-                className="bg-muted w-full pl-8 pr-2.5 py-2 border-[1px] rounded-md text-xs outline-none text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-ring border-border"
+                className="bg-muted w-full h-8 pl-8 pr-2.5 border-[1px] rounded-md text-xs outline-none text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-ring border-border"
               />
             </div>
             {inlineAction && (

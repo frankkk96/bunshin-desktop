@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bunshin · Provider 配置指南</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#ffffff; --fg:#1d1d1f; --muted:#6e6e73;
+    --border:#d2d2d7; --accent:#007aff; --code:#f0f0f2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,"SF Pro Text","PingFang SC","Helvetica Neue",Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:56px 20px 96px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 32px}
+  h2{font-size:15px;font-weight:600;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.04em;margin:40px 0 14px}
+  .steps{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:8px}
+  .steps ol{margin:0;padding-left:20px}
+  .steps li{margin:6px 0}
+  .note{background:#fff8e6;border:1px solid #f2e2b0;border-radius:12px;padding:14px 16px;margin-top:14px;font-size:14px}
+  .note b{color:#8a6d00}
+  code,.kv code{background:var(--code);border-radius:5px;padding:1px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin:14px 0;
+    box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card h3{margin:0 0 2px;font-size:19px;font-weight:650}
+  .card .en{color:var(--muted);font-weight:400;font-size:14px}
+  .kv{display:grid;grid-template-columns:96px 1fr;gap:6px 14px;margin:14px 0 0;font-size:14px}
+  .kv .k{color:var(--muted)}
+  .kv .v{word-break:break-all}
+  .kv .v a{color:var(--accent);text-decoration:none}
+  .kv .v a:hover{text-decoration:underline}
+  .cardnote{font-size:13px;color:var(--muted);margin-top:12px}
+  .btn{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:8px 16px;border-radius:9px;
+    background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:500}
+  .btn:hover{background:#0066d6}
+  .region{display:inline-block;font-size:11px;font-weight:600;color:var(--muted);
+    background:var(--code);border-radius:5px;padding:1px 7px;margin-right:6px}
+  footer{color:var(--muted);font-size:13px;margin-top:48px;text-align:center}
+  a.plain{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>在 Bunshin 里接入模型</h1>
+  <p class="sub">Bunshin 通过 Claude Code 运行,任何提供 <b>Anthropic 兼容接口</b> 的模型都能用。下面是几家常见国产模型的配置方式。</p>
+
+  <h2>通用步骤</h2>
+  <div class="steps">
+    <ol>
+      <li>在下面对应 Provider 的控制台<b>创建一个 API Key</b>。</li>
+      <li>在 Bunshin 里 <b>新建 Agent</b>,把该 Provider 的 <b>Base URL</b>、<b>API Key</b>、<b>Model</b> 三项填进去。</li>
+      <li>开始会话即可。</li>
+    </ol>
+    <div class="note">
+      <b>重要 · 补充三个环境变量</b><br/>
+      Claude Code 内部会按 opus / sonnet / haiku 三档请求模型,只填一个 <code>Model</code> 时,子代理/后台调用会回退到真正的 Claude 模型名,第三方接口不认。请在 Agent 的「高级配置 → 环境变量」里把这三项都指向该 Provider 的模型 id:
+      <div class="kv" style="margin-top:10px">
+        <span class="k">变量</span><span class="v"><code>ANTHROPIC_DEFAULT_OPUS_MODEL</code> = <code>&lt;模型id&gt;</code></span>
+        <span class="k"></span><span class="v"><code>ANTHROPIC_DEFAULT_SONNET_MODEL</code> = <code>&lt;模型id&gt;</code></span>
+        <span class="k"></span><span class="v"><code>ANTHROPIC_DEFAULT_HAIKU_MODEL</code> = <code>&lt;模型id&gt;</code></span>
+      </div>
+    </div>
+    <div class="note" style="background:#eef4ff;border-color:#cbdcff">
+      模型 id 更新较快,以各家控制台「模型列表」为准;下方给出的是撰写时的推荐编码模型。海外/国内为不同站点,Key 不通用,请按所在区域选择对应的 Base URL 与控制台。
+    </div>
+  </div>
+
+  <h2>Providers</h2>
+
+  <!-- DeepSeek -->
+  <div class="card">
+    <h3>DeepSeek <span class="en">· 深度求索</span></h3>
+    <div class="kv">
+      <span class="k">Base URL</span><span class="v"><code>https://api.deepseek.com/anthropic</code></span>
+      <span class="k">获取 Key</span><span class="v"><a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com/api_keys</a></span>
+      <span class="k">Model</span><span class="v"><code>deepseek-v4-pro</code> · 快速档 <code>deepseek-v4-flash</code></span>
+    </div>
+    <div class="cardnote">注意:裸 <code>https://api.deepseek.com</code> 是 OpenAI 兼容接口,别用;务必带 <code>/anthropic</code>。未知的 model 会静默降级到 flash,所以要显式填写。</div>
+    <a class="btn" href="https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code" target="_blank" rel="noopener">打开官方 Claude Code 文档 →</a>
+  </div>
+
+  <!-- Qwen -->
+  <div class="card">
+    <h3>通义千问 Qwen <span class="en">· 阿里云百炼 Model Studio</span></h3>
+    <div class="kv">
+      <span class="k">Base URL</span><span class="v">
+        <span class="region">国内</span><code>https://dashscope.aliyuncs.com/apps/anthropic</code><br/>
+        <span class="region">海外</span><code>https://dashscope-intl.aliyuncs.com/apps/anthropic</code>
+      </span>
+      <span class="k">获取 Key</span><span class="v">
+        <span class="region">国内</span><a href="https://bailian.console.aliyun.com/" target="_blank" rel="noopener">bailian.console.aliyun.com</a><br/>
+        <span class="region">海外</span><a href="https://modelstudio.console.alibabacloud.com/" target="_blank" rel="noopener">modelstudio.console.alibabacloud.com</a>
+      </span>
+      <span class="k">Model</span><span class="v">编码 <code>qwen3-coder-plus</code> · 旗舰 <code>qwen3-max</code></span>
+    </div>
+    <div class="cardnote">Key 的区域必须与 Base URL 区域一致(新加坡 Key ↔ <code>-intl</code>,国内 Key ↔ 国内,不可混用)。订阅版 Coding Plan 另有独立 Base URL。</div>
+    <a class="btn" href="https://help.aliyun.com/zh/model-studio/claude-code" target="_blank" rel="noopener">打开官方 Claude Code 文档 →</a>
+  </div>
+
+  <!-- Zhipu / GLM -->
+  <div class="card">
+    <h3>智谱 GLM <span class="en">· BigModel 开放平台 / Z.ai</span></h3>
+    <div class="kv">
+      <span class="k">Base URL</span><span class="v">
+        <span class="region">国内</span><code>https://open.bigmodel.cn/api/anthropic</code><br/>
+        <span class="region">海外</span><code>https://api.z.ai/api/anthropic</code>
+      </span>
+      <span class="k">获取 Key</span><span class="v">
+        <span class="region">国内</span><a href="https://bigmodel.cn/usercenter/proj-mgmt/apikeys" target="_blank" rel="noopener">bigmodel.cn · API Keys</a><br/>
+        <span class="region">海外</span><a href="https://z.ai/manage-apikey/apikey-list" target="_blank" rel="noopener">z.ai · API Keys</a>
+      </span>
+      <span class="k">Model</span><span class="v"><code>glm-4.6</code> · 轻量 <code>glm-4.5-air</code></span>
+    </div>
+    <div class="cardnote">Base URL 必须以 <code>/api/anthropic</code> 结尾;OpenAI 的 <code>/api/paas/v4</code> 路径在 Claude Code 下会 404。</div>
+    <a class="btn" href="https://docs.bigmodel.cn/cn/coding-plan/quick-start" target="_blank" rel="noopener">打开官方 Claude Code 文档 →</a>
+  </div>
+
+  <!-- MiniMax -->
+  <div class="card">
+    <h3>MiniMax</h3>
+    <div class="kv">
+      <span class="k">Base URL</span><span class="v">
+        <span class="region">国内</span><code>https://api.minimaxi.com/anthropic</code><br/>
+        <span class="region">海外</span><code>https://api.minimax.io/anthropic</code>
+      </span>
+      <span class="k">获取 Key</span><span class="v">
+        <span class="region">国内</span><a href="https://platform.minimaxi.com/user-center/payment/token-plan" target="_blank" rel="noopener">platform.minimaxi.com</a><br/>
+        <span class="region">海外</span><a href="https://platform.minimax.io/user-center/payment/token-plan" target="_blank" rel="noopener">platform.minimax.io</a>
+      </span>
+      <span class="k">Model</span><span class="v"><code>MiniMax-M3</code></span>
+    </div>
+    <div class="cardnote">已知:<code>/anthropic</code> 端点上报的上下文窗口偏小,官方建议在 env 里加 <code>CLAUDE_CODE_AUTO_COMPACT_WINDOW=512000</code> 以避免过早压缩。</div>
+    <a class="btn" href="https://platform.minimax.io/docs/token-plan/claude-code" target="_blank" rel="noopener">打开官方 Claude Code 文档 →</a>
+  </div>
+
+  <!-- Kimi -->
+  <div class="card">
+    <h3>Kimi <span class="en">· Moonshot AI 月之暗面</span></h3>
+    <div class="kv">
+      <span class="k">Base URL</span><span class="v">
+        <span class="region">国内</span><code>https://api.moonshot.cn/anthropic</code><br/>
+        <span class="region">海外</span><code>https://api.moonshot.ai/anthropic</code>
+      </span>
+      <span class="k">获取 Key</span><span class="v">
+        <span class="region">国内</span><a href="https://platform.kimi.com/console/api-keys" target="_blank" rel="noopener">platform.kimi.com · API Keys</a><br/>
+        <span class="region">海外</span><a href="https://platform.kimi.ai/console/api-keys" target="_blank" rel="noopener">platform.kimi.ai · API Keys</a>
+      </span>
+      <span class="k">Model</span><span class="v"><code>kimi-k2.7-code</code></span>
+    </div>
+    <div class="cardnote"><code>.cn</code> 与 <code>.ai</code> 的 Key 不互通。该端点会在服务端把 temperature 乘以 0.6(正常行为)。</div>
+    <a class="btn" href="https://platform.kimi.com/docs/guide/agent-support" target="_blank" rel="noopener">打开官方 Claude Code 文档 →</a>
+  </div>
+
+  <footer>
+    Bunshin · 模型配置指南 &nbsp;|&nbsp; 模型 id 与端点以各 Provider 官方文档为准
+  </footer>
+</div>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { IoAddOutline, IoChatbubblesOutline, IoSettingsOutline } from 'react-icons/io5'
 import { Download } from 'lucide-react'
 import { getVersion } from '@tauri-apps/api/app'
@@ -8,48 +8,69 @@ import { Button } from '@/components/ui'
 import { openSettingsWindow } from '@/components/features/Settings/SettingsWindow'
 import { useUpdater } from '@/components/features/Updater/useUpdater'
 import { UpdateDialog } from '@/components/features/Updater/UpdateDialog'
-import { useSessions } from '@/hooks/sessions'
-import { SessionsList } from './SessionsList'
+import { useAgents } from '@/hooks/agents'
+import { useRunningSessions, useSessions, useStartSession } from '@/hooks/sessions'
+import { AgentCreationModal } from '@/components/features/Contacts/AgentCreationModal'
+import { AgentEditor } from '@/components/features/Contacts/AgentEditor'
+import { toast } from '@/lib/core/utils/toast'
+import { useT } from '@/lib/i18n'
+import type { Agent } from '@/lib/types'
+import { AgentsList } from './AgentsList'
 import { SessionView } from './SessionView'
-import { StartSessionModal } from './StartSessionModal'
 
 export function SessionsView() {
   const { sessionId } = useParams<{ sessionId?: string }>()
-  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { data: sessions = [], isLoading } = useSessions()
+  const t = useT()
+  const { data: agents = [], isLoading } = useAgents()
+  const { data: sessions = [] } = useSessions()
+  const { data: running = [] } = useRunningSessions()
+  const startSession = useStartSession()
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
-  const [creationDefaultAgentId, setCreationDefaultAgentId] = useState<string | undefined>()
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
 
-  // Open the creation modal when navigated here with `?createFor=<agentId>`,
-  // then strip the query so back/forward doesn't re-open it.
-  useEffect(() => {
-    const createFor = searchParams.get('createFor')
-    if (createFor) {
-      setCreationDefaultAgentId(createFor)
-      setCreating(true)
-      const next = new URLSearchParams(searchParams)
-      next.delete('createFor')
-      setSearchParams(next, { replace: true })
+  const selected = sessionId ? sessions.find((s) => s.id === sessionId) : null
+  const selectedAgentId = selected?.agentId
+
+  // Agents that currently have a running session → green dot in the sidebar.
+  const runningAgentIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const s of sessions) {
+      if (running.find((r) => r.sessionId === s.id && r.status === 'running')) ids.add(s.agentId)
     }
-  }, [searchParams, setSearchParams])
+    return ids
+  }, [sessions, running])
 
   const filtered = useMemo(
     () =>
-      sessions.filter((s) => {
-        const label = (s.name ?? s.cwd ?? '').toLowerCase()
-        return label.includes(search.toLowerCase())
+      agents.filter((a) => {
+        const q = search.toLowerCase()
+        return a.alias.toLowerCase().includes(q) || a.cwd.toLowerCase().includes(q)
       }),
-    [sessions, search],
+    [agents, search],
   )
 
-  const openCreate = () => {
-    setCreationDefaultAgentId(undefined)
-    setCreating(true)
+  // Open an agent → its most recent session, or create one if it has none.
+  const openAgent = async (agentId: string) => {
+    const latest = sessions
+      .filter((s) => s.agentId === agentId)
+      .sort((a, b) => (b.visitedAt || b.updatedAt) - (a.visitedAt || a.updatedAt))[0]
+    if (latest) {
+      navigate(`/sessions/${latest.id}`)
+      return
+    }
+    try {
+      const s = await startSession.mutateAsync({ agentId, name: null })
+      navigate(`/sessions/${s.id}`)
+    } catch (err) {
+      toast.error(String(err))
+    }
   }
 
-  const selected = sessionId ? sessions.find((s) => s.id === sessionId) : null
+  const keepLatest = editingAgent
+    ? agents.find((a) => a.id === editingAgent.id) ?? editingAgent
+    : null
 
   useEffect(() => {
     if (sessionId && !isLoading && !selected) {
@@ -60,23 +81,25 @@ export function SessionsView() {
   return (
     <div className="flex h-full">
       <SidebarContainer
-        searchPlaceholder="Search"
+        searchPlaceholder={t('ui.searchAgents')}
         searchValue={search}
         onSearchChange={setSearch}
         isLoading={isLoading}
         inlineAction={{
           icon: IoAddOutline,
-          tooltip: 'New Session',
-          onClick: openCreate,
+          tooltip: t('agent.newAgent'),
+          onClick: () => setCreating(true),
         }}
         footer={<SidebarFooter />}
       >
-        <SessionsList
-          sessions={filtered}
-          selectedId={sessionId}
-          onSelect={(id) => navigate(`/sessions/${id}`)}
-          onCreate={openCreate}
-          hasAnySession={sessions.length > 0}
+        <AgentsList
+          agents={filtered}
+          selectedAgentId={selectedAgentId}
+          runningAgentIds={runningAgentIds}
+          onSelect={openAgent}
+          onEdit={setEditingAgent}
+          onCreate={() => setCreating(true)}
+          hasAnyAgent={agents.length > 0}
         />
       </SidebarContainer>
 
@@ -84,20 +107,29 @@ export function SessionsView() {
         {selected ? (
           <SessionView session={selected} key={selected.id} />
         ) : (
-          <SessionsEmptyState
-            prominent={sessions.length === 0}
-            onCreate={openCreate}
+          <AgentsEmptyState
+            prominent={agents.length === 0}
+            onCreate={() => setCreating(true)}
           />
         )}
       </div>
 
       {creating && (
-        <StartSessionModal
-          defaultAgentId={creationDefaultAgentId}
+        <AgentCreationModal
           onClose={() => setCreating(false)}
-          onStarted={(s) => {
+          onCreated={(agent) => {
             setCreating(false)
-            navigate(`/sessions/${s.id}`)
+            void openAgent(agent.id)
+          }}
+        />
+      )}
+
+      {keepLatest && (
+        <AgentEditor
+          agent={keepLatest}
+          onClose={() => setEditingAgent(null)}
+          onDeleted={() => {
+            if (selectedAgentId === keepLatest.id) navigate('/sessions')
           }}
         />
       )}
@@ -107,6 +139,7 @@ export function SessionsView() {
 
 function SidebarFooter() {
   const { updateAvailable, hasUpdate } = useUpdater()
+  const t = useT()
   const [version, setVersion] = useState('')
   const [showDialog, setShowDialog] = useState(false)
 
@@ -120,38 +153,45 @@ function SidebarFooter() {
     <div className="flex items-center justify-between gap-1">
       <button
         onClick={() => openSettingsWindow('agents')}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        title={t('ui.settings')}
+        aria-label={t('ui.settings')}
+        className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
       >
-        <IoSettingsOutline size={15} />
-        Settings
+        <IoSettingsOutline size={16} />
       </button>
 
-      {hasUpdate && updateAvailable ? (
-        <>
-          <button
-            onClick={() => setShowDialog(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-interactive hover:bg-interactive/10 transition-colors"
-            title={`Update available: v${updateAvailable.version}`}
-          >
-            <Download size={13} />
-            Update
-          </button>
-          <UpdateDialog open={showDialog} onOpenChange={setShowDialog} update={updateAvailable} />
-        </>
-      ) : (
-        version && <span className="text-[11px] text-muted-foreground/70 pr-1.5">v{version}</span>
-      )}
+      <div className="flex items-center gap-2 pr-1 select-none">
+        <img
+          src="/app-icon.png"
+          alt=""
+          className="w-7 h-7 rounded-[7px] opacity-90 pointer-events-none"
+          draggable={false}
+        />
+        <div className="flex flex-col items-end leading-tight">
+          <span className="text-[11px] font-semibold text-muted-foreground">Bunshin</span>
+          {hasUpdate && updateAvailable ? (
+            <>
+              <button
+                onClick={() => setShowDialog(true)}
+                className="flex items-center gap-1 text-[11px] font-medium text-interactive hover:underline"
+                title={`Update available: v${updateAvailable.version}`}
+              >
+                <Download size={11} />
+                {t('ui.update')}
+              </button>
+              <UpdateDialog open={showDialog} onOpenChange={setShowDialog} update={updateAvailable} />
+            </>
+          ) : (
+            version && <span className="text-[10px] text-muted-foreground/50">v{version}</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
 
-function SessionsEmptyState({
-  prominent,
-  onCreate,
-}: {
-  prominent: boolean
-  onCreate: () => void
-}) {
+function AgentsEmptyState({ prominent, onCreate }: { prominent: boolean; onCreate: () => void }) {
+  const t = useT()
   return (
     <div
       data-tauri-drag-region
@@ -161,17 +201,17 @@ function SessionsEmptyState({
         <IoChatbubblesOutline size={30} />
       </div>
       <h2 className="text-lg font-semibold text-foreground mb-1.5">
-        {prominent ? 'No sessions yet' : 'No session selected'}
+        {prominent ? t('agent.noAgentsTitle') : t('agent.pickTitle')}
       </h2>
       <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
-        {prominent
-          ? 'Start a Claude Code session in a project folder to begin chatting with an agent.'
-          : 'Pick a session on the left, or create a new one.'}
+        {prominent ? t('agent.emptyHint') : t('agent.pickHint')}
       </p>
-      <Button onClick={onCreate} className="flex items-center gap-1.5 px-5">
-        <IoAddOutline size={16} />
-        Create Session
-      </Button>
+      {prominent && (
+        <Button onClick={onCreate} className="flex items-center gap-1.5 px-5">
+          <IoAddOutline size={16} />
+          {t('agent.newAgent')}
+        </Button>
+      )}
     </div>
   )
 }

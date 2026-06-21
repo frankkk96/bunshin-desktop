@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui'
 import { cn } from '@/lib/ui/utils'
+import { useT } from '@/lib/i18n'
 
 interface ComposerProps {
   disabled?: boolean
@@ -37,6 +38,7 @@ export function Composer({
   onSend,
   onCancel,
 }: ComposerProps) {
+  const t = useT()
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<PickedAttachment[]>([])
   const [busy, setBusy] = useState(false)
@@ -119,8 +121,8 @@ export function Composer({
             onKeyDown={handleKey}
             placeholder={
               disabled
-                ? disabledHint ?? 'Subprocess not running…'
-                : 'Ask me anything...'
+                ? disabledHint ?? t('composer.notRunning')
+                : t('composer.placeholder')
             }
             rows={2}
             disabled={disabled || busy}

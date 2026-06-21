@@ -35,18 +35,6 @@ export interface AgentConfig {
   extraSettings?: string | null
 }
 
-export interface Agent {
-  id: string
-  alias: string
-  description: string | null
-  avatar: string | null
-  /** Custom Anthropic-compatible base URL (null → api.anthropic.com). */
-  baseUrl: string | null
-  config: AgentConfig
-  createdAt: number
-  updatedAt: number
-}
-
 export type PermissionMode =
   | 'default'
   | 'acceptEdits'
@@ -54,12 +42,26 @@ export type PermissionMode =
   | 'bypassPermissions'
   | 'dontAsk'
 
+export interface Agent {
+  id: string
+  alias: string
+  description: string | null
+  avatar: string | null
+  /** Custom Anthropic-compatible base URL (null → api.anthropic.com). */
+  baseUrl: string | null
+  /** Working directory for every session under this agent. */
+  cwd: string
+  permissionMode: PermissionMode
+  config: AgentConfig
+  createdAt: number
+  updatedAt: number
+}
+
+/** A session is one chat under an agent (cwd/permission inherited from it). */
 export interface Session {
   id: string
   agentId: string
   name: string | null
-  cwd: string
-  permissionMode: PermissionMode
   favorite: boolean
   createdAt: number
   updatedAt: number

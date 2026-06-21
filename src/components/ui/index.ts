@@ -22,9 +22,4 @@ export {
   Separator,
   Label,
   Toaster,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
 } from './primitives'

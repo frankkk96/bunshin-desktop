@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Update } from '@tauri-apps/plugin-updater'
 import { Sheet, SheetContent, SheetTitle, SheetDescription, Button, Progress, ScrollArea } from '@/components/ui'
 import { updateService, UpdateStatus } from '@/lib/core/updater/update-service'
-import { Download, AlertCircle, CheckCircle, X } from 'lucide-react'
+import { Download, AlertCircle, CheckCircle } from 'lucide-react'
 
 interface UpdateDialogProps {
   open: boolean
@@ -42,23 +42,14 @@ export function UpdateDialog({ open, onOpenChange, update }: UpdateDialogProps) 
     <Sheet isOpen={open} onClose={handleClose} maxWidth="500px" height="auto">
       <SheetContent className="p-0 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border/20">
-          <div>
-            <SheetTitle className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Update Available
-            </SheetTitle>
-            <SheetDescription>
-              Version {update.version} is now available. Would you like to update?
-            </SheetDescription>
-          </div>
-          <button
-            onClick={handleClose}
-            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent/30 cursor-pointer"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
+        <div className="px-5 py-3 border-b border-border/20">
+          <SheetTitle className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Update Available
+          </SheetTitle>
+          <SheetDescription>
+            Version {update.version} is now available. Would you like to update?
+          </SheetDescription>
         </div>
 
         {/* Content */}

@@ -1,20 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
-import type {
-  Message,
-  PermissionMode,
-  RunningSessionInfo,
-  Session,
-} from '@/lib/types'
+import type { Message, RunningSessionInfo, Session } from '@/lib/types'
 
 export const sessionsApi = {
   list: () => invoke<Session[]>('list_sessions'),
   delete: (id: string) => invoke<void>('delete_session', { id }),
-  start: (input: {
-    agentId: string
-    cwd: string
-    permissionMode: PermissionMode
-    name: string | null
-  }) => invoke<Session>('start_session', { input }),
+  rename: (id: string, name: string | null) => invoke<void>('rename_session', { id, name }),
+  setFavorite: (id: string, favorite: boolean) =>
+    invoke<void>('set_session_favorite', { id, favorite }),
+  start: (input: { agentId: string; name: string | null }) =>
+    invoke<Session>('start_session', { input }),
   resume: (sessionId: string) => invoke<void>('resume_session', { sessionId }),
   stop: (sessionId: string) => invoke<void>('stop_session', { sessionId }),
   send: (input: {

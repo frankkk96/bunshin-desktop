@@ -12,6 +12,7 @@ import { Button, Input, Label } from '@/components/ui'
 import { sessionsApi } from '@/lib/tauri/service/sessions'
 import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
+import { useT } from '@/lib/i18n'
 import type { Message } from '@/lib/types'
 import { Markdown } from './Markdown'
 
@@ -162,6 +163,7 @@ function ToolPermissionPrompt({
   disabled: boolean
   respond: (r: unknown) => () => Promise<void>
 }) {
+  const t = useT()
   const [expanded, setExpanded] = useState(RISKY_TOOLS.has(toolName))
 
   if (resolution) return <ResolvedChip resolution={resolution} label={toolName} />
@@ -175,7 +177,7 @@ function ToolPermissionPrompt({
   return (
     <CardShell
       icon={<ShieldCheck size={13} className="text-amber-500" />}
-      title="Permission needed"
+      title={t('permreq.needed')}
       tone="amber"
     >
       <button
@@ -208,7 +210,7 @@ function ToolPermissionPrompt({
             interrupt: false,
           })}
         >
-          Deny
+          {t('permreq.deny')}
         </Button>
         <Button
           size="sm"
@@ -220,14 +222,14 @@ function ToolPermissionPrompt({
             updatedPermissions: [allowAlwaysSuggestion],
           })}
         >
-          Allow always
+          {t('permreq.allowAlways')}
         </Button>
         <Button
           size="sm"
           disabled={disabled}
           onClick={respond({ behavior: 'allow', updatedInput: input })}
         >
-          Allow
+          {t('permreq.allow')}
         </Button>
       </div>
     </CardShell>

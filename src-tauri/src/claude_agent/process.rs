@@ -200,16 +200,17 @@ impl ClaudeProcess {
             cmd.arg("--session-id").arg(&session.claude_session_id);
         }
 
+        // Working directory + permission mode come from the agent.
         cmd.arg("--add-dir")
-            .arg(&session.cwd)
+            .arg(&agent.cwd)
             .arg("--permission-mode")
-            .arg(session.permission_mode.as_cli_flag());
+            .arg(agent.permission_mode.as_cli_flag());
 
         // Per-agent Claude Code configuration (model, effort, system prompt,
         // disabled tools, permissions, env, MCP, raw settings overrides).
         apply_agent_config(&mut cmd, &agent.config);
 
-        cmd.current_dir(&session.cwd);
+        cmd.current_dir(&agent.cwd);
 
         // API auth: optional custom endpoint + the agent's key.
         if let Some(base_url) = agent.base_url.as_deref() {

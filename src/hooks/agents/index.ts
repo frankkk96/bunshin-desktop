@@ -50,10 +50,11 @@ export function useDuplicateAgent() {
   })
 }
 
-export function useHasAgentApiKey(agentId: string | undefined) {
+export function useAgentApiKey(agentId: string | undefined) {
   return useQuery({
-    queryKey: [...KEY, agentId, 'has-key'],
-    queryFn: () => agentsApi.hasApiKey(agentId!),
+    queryKey: [...KEY, agentId, 'api-key'],
+    queryFn: () => agentsApi.getApiKey(agentId!),
     enabled: !!agentId,
+    staleTime: Infinity,
   })
 }

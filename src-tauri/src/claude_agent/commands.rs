@@ -1,5 +1,5 @@
 use crate::claude_agent::manager::{ClaudeSessionManager, RunningSessionInfo};
-use crate::database::models::{PermissionMode, Session};
+use crate::database::models::Session;
 use crate::database::repositories::{AgentRepository, MessageRepository, SessionRepository};
 use crate::database::AppState;
 use crate::secure_storage::SecureStorage;
@@ -15,8 +15,6 @@ pub const AGENT_KEY_SERVICE: &str = "agent_keys";
 #[serde(rename_all = "camelCase")]
 pub struct StartSessionInput {
     pub agent_id: String,
-    pub cwd: String,
-    pub permission_mode: PermissionMode,
     pub name: Option<String>,
 }
 
@@ -52,29 +50,20 @@ pub async fn start_session(
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {} not found", input.agent_id))?;
 
-    if !Path::new(&input.cwd).is_dir() {
+    if !Path::new(&agent.cwd).is_dir() {
         return Err(format!(
-            "working directory does not exist or is not a directory: {}",
-            input.cwd
+            "agent '{}' has no valid working directory: {}",
+            agent.alias, agent.cwd
         ));
     }
 
-    // Enforce at most one session per (agent, cwd). Surface the existing id with
-    // a structured prefix so the frontend can navigate to it instead of erroring.
     let session_repo = SessionRepository::new(state.db_pool.clone());
-    if let Some(existing) = session_repo
-        .find_by_agent_and_cwd(&agent.id, &input.cwd)
-        .await
-        .map_err(|e| e.to_string())?
-    {
-        return Err(format!("DUPLICATE_SESSION:{}", existing.id));
-    }
 
     let api_key = match load_agent_api_key(&app, &agent.id)? {
         Some(k) if !k.is_empty() => Some(k),
         _ => {
             return Err(format!(
-                "no API key set for agent '{}' — add one in Settings → Agents",
+                "no API key set for agent '{}' — add one in its settings",
                 agent.alias
             ))
         }
@@ -85,8 +74,6 @@ pub async fn start_session(
         id: uuid::Uuid::new_v4().to_string(),
         agent_id: agent.id.clone(),
         name: input.name,
-        cwd: input.cwd,
-        permission_mode: input.permission_mode,
         favorite: false,
         created_at: now,
         updated_at: now,
@@ -319,5 +306,10 @@ pub async fn set_agent_api_key(
 #[tauri::command]
 pub async fn has_agent_api_key(agent_id: String, app: AppHandle) -> Result<bool, String> {
     Ok(load_agent_api_key(&app, &agent_id)?.is_some())
+}
+
+#[tauri::command]
+pub async fn get_agent_api_key(agent_id: String, app: AppHandle) -> Result<Option<String>, String> {
+    load_agent_api_key(&app, &agent_id)
 }
 

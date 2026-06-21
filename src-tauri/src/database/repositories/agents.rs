@@ -1,9 +1,9 @@
 use crate::database::models::{Agent, DbAgent};
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 use sqlx::SqlitePool;
 
-const SELECT_COLS: &str =
-    "id, alias, description, avatar, base_url, config, created_at, updated_at";
+const SELECT_COLS: &str = "id, alias, description, avatar, base_url, cwd, permission_mode, \
+     config, created_at, updated_at";
 
 pub struct AgentRepository {
     pool: SqlitePool,
@@ -35,8 +35,9 @@ impl AgentRepository {
         sqlx::query(
             r#"
             INSERT INTO agents
-                (id, alias, description, avatar, base_url, config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (id, alias, description, avatar, base_url, cwd, permission_mode, config,
+                 created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(&agent.id)
@@ -44,6 +45,8 @@ impl AgentRepository {
         .bind(agent.description.as_deref())
         .bind(agent.avatar.as_deref())
         .bind(agent.base_url.as_deref())
+        .bind(&agent.cwd)
+        .bind(agent.permission_mode.as_cli_flag())
         .bind(agent.config.to_json())
         .bind(agent.created_at)
         .bind(agent.updated_at)
@@ -56,7 +59,8 @@ impl AgentRepository {
         sqlx::query(
             r#"
             UPDATE agents
-            SET alias = ?, description = ?, avatar = ?, base_url = ?, config = ?, updated_at = ?
+            SET alias = ?, description = ?, avatar = ?, base_url = ?, cwd = ?,
+                permission_mode = ?, config = ?, updated_at = ?
             WHERE id = ?
             "#,
         )
@@ -64,6 +68,8 @@ impl AgentRepository {
         .bind(agent.description.as_deref())
         .bind(agent.avatar.as_deref())
         .bind(agent.base_url.as_deref())
+        .bind(&agent.cwd)
+        .bind(agent.permission_mode.as_cli_flag())
         .bind(agent.config.to_json())
         .bind(agent.updated_at)
         .bind(&agent.id)
@@ -72,17 +78,12 @@ impl AgentRepository {
         Ok(agent)
     }
 
+    /// Delete an agent and all its conversations (messages cascade off sessions).
     pub async fn delete(&self, id: &str) -> AppResult<()> {
-        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM sessions WHERE agent_id = ?")
+        sqlx::query("DELETE FROM sessions WHERE agent_id = ?")
             .bind(id)
-            .fetch_one(&self.pool)
+            .execute(&self.pool)
             .await?;
-        if count.0 > 0 {
-            return Err(AppError::InvalidInput(format!(
-                "{} session(s) still belong to this agent",
-                count.0
-            )));
-        }
         sqlx::query("DELETE FROM agents WHERE id = ?")
             .bind(id)
             .execute(&self.pool)

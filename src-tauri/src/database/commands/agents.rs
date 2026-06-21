@@ -1,6 +1,6 @@
 use crate::claude_agent::commands::AGENT_KEY_SERVICE;
 use crate::claude_agent::process::agent_profile_dir;
-use crate::database::models::{Agent, AgentConfig};
+use crate::database::models::{Agent, AgentConfig, PermissionMode};
 use crate::database::repositories::AgentRepository;
 use crate::database::AppState;
 use crate::secure_storage::SecureStorage;
@@ -15,6 +15,10 @@ pub struct CreateAgentInput {
     pub description: Option<String>,
     pub avatar: Option<String>,
     pub base_url: Option<String>,
+    /// Working directory for the agent's conversations.
+    pub cwd: String,
+    #[serde(default = "default_permission_mode")]
+    pub permission_mode: PermissionMode,
     /// Anthropic-compatible API key — stored encrypted, keyed by the new agent id.
     pub api_key: Option<String>,
     #[serde(default)]
@@ -29,10 +33,16 @@ pub struct UpdateAgentInput {
     pub description: Option<String>,
     pub avatar: Option<String>,
     pub base_url: Option<String>,
+    pub cwd: String,
+    pub permission_mode: PermissionMode,
     /// Empty/None leaves the stored key untouched; a value replaces it.
     pub api_key: Option<String>,
     #[serde(default)]
     pub config: Option<AgentConfig>,
+}
+
+fn default_permission_mode() -> PermissionMode {
+    PermissionMode::Default
 }
 
 fn key_storage(app: &AppHandle) -> Result<SecureStorage, String> {
@@ -76,6 +86,10 @@ pub async fn create_agent(
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<Agent, String> {
+    if !Path::new(&input.cwd).is_dir() {
+        return Err(format!("working directory does not exist: {}", input.cwd));
+    }
+
     let now = chrono::Utc::now().timestamp_millis();
     let agent = Agent {
         id: uuid::Uuid::new_v4().to_string(),
@@ -83,6 +97,8 @@ pub async fn create_agent(
         description: input.description,
         avatar: input.avatar,
         base_url: input.base_url,
+        cwd: input.cwd,
+        permission_mode: input.permission_mode,
         config: input.config.unwrap_or_default(),
         created_at: now,
         updated_at: now,
@@ -118,6 +134,10 @@ pub async fn update_agent(
             .map_err(|e| e.to_string())?;
     }
 
+    if !Path::new(&input.cwd).is_dir() {
+        return Err(format!("working directory does not exist: {}", input.cwd));
+    }
+
     let now = chrono::Utc::now().timestamp_millis();
     let agent = Agent {
         id: existing.id,
@@ -125,6 +145,8 @@ pub async fn update_agent(
         description: input.description,
         avatar: input.avatar,
         base_url: input.base_url,
+        cwd: input.cwd,
+        permission_mode: input.permission_mode,
         config: input.config.unwrap_or(existing.config),
         created_at: existing.created_at,
         updated_at: now,
@@ -176,6 +198,8 @@ pub async fn duplicate_agent(
         description: src.description.clone(),
         avatar: src.avatar.clone(),
         base_url: src.base_url.clone(),
+        cwd: src.cwd.clone(),
+        permission_mode: src.permission_mode,
         config: src.config.clone(),
         created_at: now,
         updated_at: now,

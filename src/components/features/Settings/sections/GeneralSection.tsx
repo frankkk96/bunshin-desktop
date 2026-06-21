@@ -26,12 +26,14 @@ import { app } from '@/lib/tauri/system/app'
 import { testCrashAndSubmit } from '@/lib/core/utils/crash'
 import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
+import { useT } from '@/lib/i18n'
 import { SettingSelect } from '../components/SettingSelect'
 import { SettingSection } from '../components/SettingSection'
 import { SettingRow } from '../components/SettingRow'
 import { SettingDivider } from '../components/SettingDivider'
 
 export function GeneralSection() {
+  const t = useT()
   // Listen for settings changes from other windows
   useSettingsChangeListener()
 
@@ -100,7 +102,7 @@ export function GeneralSection() {
           </>
         )
       default:
-        return 'Test'
+        return t('set.test')
     }
   }
 
@@ -170,17 +172,17 @@ export function GeneralSection() {
       )}
 
       {/* Application */}
-      <SettingSection title="Application">
-        <SettingRow icon={<Palette className="w-4 h-4" />} title="Theme">
+      <SettingSection title={t('set.application')}>
+        <SettingRow icon={<Palette className="w-4 h-4" />} title={t('set.theme')}>
           <SettingSelect
             value={theme}
             onValueChange={(value) => {
               updateSettings.mutate({ theme: value as Theme })
             }}
             options={[
-              { value: 'light', label: 'Light' },
-              { value: 'dark', label: 'Dark' },
-              { value: 'system', label: 'System' },
+              { value: 'light', label: t('set.light') },
+              { value: 'dark', label: t('set.dark') },
+              { value: 'system', label: t('set.systemMode') },
             ]}
             className="text-sm"
           />
@@ -188,7 +190,7 @@ export function GeneralSection() {
 
         <SettingDivider />
 
-        <SettingRow icon={<Globe className="w-4 h-4" />} title="Language">
+        <SettingRow icon={<Globe className="w-4 h-4" />} title={t('set.language')}>
           <SettingSelect
             value={language}
             onValueChange={(value) => {
@@ -196,9 +198,7 @@ export function GeneralSection() {
             }}
             options={[
               { value: 'en', label: 'English' },
-              // { value: 'zh', label: '中文' },
-              // { value: 'ja', label: '日本語' },
-              // { value: 'ko', label: '한국어' },
+              { value: 'zh', label: '中文' },
             ]}
             className="text-sm"
           />
@@ -206,8 +206,8 @@ export function GeneralSection() {
       </SettingSection>
 
       {/* System */}
-      <SettingSection title="System">
-        <SettingRow icon={<RefreshCw className="w-4 h-4" />} title="Auto Update">
+      <SettingSection title={t('set.system')}>
+        <SettingRow icon={<RefreshCw className="w-4 h-4" />} title={t('set.autoUpdate')}>
           <Switch
             checked={autoUpdate}
             onCheckedChange={(checked: boolean) => {
@@ -216,7 +216,7 @@ export function GeneralSection() {
           />
         </SettingRow>
         <SettingDivider />
-        <SettingRow icon={<Bug className="w-4 h-4" />} title="Crash Reports">
+        <SettingRow icon={<Bug className="w-4 h-4" />} title={t('set.crashReports')}>
           <Switch
             checked={crashReports}
             onCheckedChange={(checked: boolean) => {
@@ -227,11 +227,11 @@ export function GeneralSection() {
       </SettingSection>
 
       {/* Proxy Configuration */}
-      <SettingSection title="Proxy">
+      <SettingSection title={t('set.proxy')}>
         <SettingRow
           icon={<Router className="w-4 h-4" />}
-          title="Proxy URL"
-          description="HTTP/HTTPS proxy server URL"
+          title={t('set.proxyUrl')}
+          description={t('set.proxyDesc')}
         >
           <div className="flex items-center gap-2">
             <Input
@@ -259,11 +259,11 @@ export function GeneralSection() {
       </SettingSection>
 
       {/* Data Management */}
-      <SettingSection title="Data Management">
+      <SettingSection title={t('set.dataMgmt')}>
         <SettingRow
           icon={<Download className="w-4 h-4" />}
-          title="Export Data"
-          description="Export all application data excluding encrypted API keys"
+          title={t('set.exportData')}
+          description={t('set.exportDesc')}
         >
           <Button
             onClick={handleExportData}
@@ -273,12 +273,12 @@ export function GeneralSection() {
             {isExporting ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                Exporting...
+                {t('cfg.saving')}
               </>
             ) : (
               <>
                 <Download className="w-3.5 h-3.5 mr-1.5" />
-                Export
+                {t('set.export')}
               </>
             )}
           </Button>
@@ -286,14 +286,14 @@ export function GeneralSection() {
       </SettingSection>
 
       {/* Help & Diagnostics */}
-      <SettingSection title="Help & Diagnostics">
+      <SettingSection title={t('set.help')}>
         <SettingRow
           icon={<MessageSquare className="w-4 h-4" />}
-          title="Submit Feedback"
-          description="Open the GitHub issue tracker"
+          title={t('set.feedback')}
+          description={t('set.feedbackDesc')}
         >
           <Button onClick={handleFeedbackClick} variant="outline">
-            Open
+            {t('set.open')}
           </Button>
         </SettingRow>
 

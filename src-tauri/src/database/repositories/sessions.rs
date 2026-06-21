@@ -2,7 +2,7 @@ use crate::database::models::{DbSession, Session};
 use crate::error::AppResult;
 use sqlx::SqlitePool;
 
-const SELECT_COLS: &str = "id, agent_id, name, cwd, permission_mode, favorite, created_at, \
+const SELECT_COLS: &str = "id, agent_id, name, favorite, created_at, \
                            updated_at, visited_at, claude_session_id";
 
 pub struct SessionRepository {
@@ -33,38 +33,17 @@ impl SessionRepository {
         Ok(row.map(Session::from))
     }
 
-    /// Find an existing session for the same (agent, cwd) pair so the start flow
-    /// can short-circuit with the "session already exists" UX.
-    pub async fn find_by_agent_and_cwd(
-        &self,
-        agent_id: &str,
-        cwd: &str,
-    ) -> AppResult<Option<Session>> {
-        let sql = format!(
-            "SELECT {SELECT_COLS} FROM sessions WHERE agent_id = ? AND cwd = ? LIMIT 1"
-        );
-        let row = sqlx::query_as::<_, DbSession>(&sql)
-            .bind(agent_id)
-            .bind(cwd)
-            .fetch_optional(&self.pool)
-            .await?;
-        Ok(row.map(Session::from))
-    }
-
     pub async fn create(&self, session: Session) -> AppResult<Session> {
         sqlx::query(
             r#"
             INSERT INTO sessions
-              (id, agent_id, name, cwd, permission_mode, favorite,
-               created_at, updated_at, visited_at, claude_session_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              (id, agent_id, name, favorite, created_at, updated_at, visited_at, claude_session_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(&session.id)
         .bind(&session.agent_id)
         .bind(session.name.as_deref())
-        .bind(&session.cwd)
-        .bind(session.permission_mode.as_cli_flag())
         .bind(if session.favorite { 1i64 } else { 0i64 })
         .bind(session.created_at)
         .bind(session.updated_at)
@@ -78,6 +57,28 @@ impl SessionRepository {
     pub async fn delete(&self, id: &str) -> AppResult<()> {
         // messages cascade via FK ON DELETE CASCADE.
         sqlx::query("DELETE FROM sessions WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn set_name(&self, id: &str, name: Option<&str>) -> AppResult<()> {
+        let now = chrono::Utc::now().timestamp_millis();
+        sqlx::query("UPDATE sessions SET name = ?, updated_at = ? WHERE id = ?")
+            .bind(name)
+            .bind(now)
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn set_favorite(&self, id: &str, favorite: bool) -> AppResult<()> {
+        let now = chrono::Utc::now().timestamp_millis();
+        sqlx::query("UPDATE sessions SET favorite = ?, updated_at = ? WHERE id = ?")
+            .bind(if favorite { 1i64 } else { 0i64 })
+            .bind(now)
             .bind(id)
             .execute(&self.pool)
             .await?;

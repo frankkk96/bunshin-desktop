@@ -562,9 +562,12 @@ pub fn run() {
             duplicate_agent,
             set_agent_api_key,
             has_agent_api_key,
+            get_agent_api_key,
             // Sessions (read + lifecycle)
             list_sessions,
             delete_session,
+            rename_session,
+            set_session_favorite,
             // Messages
             get_messages_by_session,
             // Claude subprocess

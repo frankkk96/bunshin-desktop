@@ -76,16 +76,30 @@ impl DatabaseConnection {
             }
         }
 
-        // Providers were merged into agents: each agent now owns its own auth
-        // (type + base_url + key + isolated profile). The previous `providers`
-        // table is the marker of the old schema — if it's present, hard-reset the
-        // app tables (agreed early-data reset; no in-place migration).
+        // The working directory + permission mode moved from sessions onto the
+        // agent. Old schemas are detected by `providers` still existing OR the
+        // agents table lacking the `cwd` column — either way, hard-reset the app
+        // tables (agreed early-data reset; no in-place migration).
         let providers_present: Option<(String,)> = sqlx::query_as(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='providers'",
         )
         .fetch_optional(&self.pool)
         .await?;
-        if providers_present.is_some() {
+        let agents_exists: Option<(String,)> = sqlx::query_as(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='agents'",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        let agents_has_cwd = if agents_exists.is_some() {
+            let cols: Vec<(String,)> =
+                sqlx::query_as("SELECT name FROM pragma_table_info('agents')")
+                    .fetch_all(&self.pool)
+                    .await?;
+            cols.iter().any(|(n,)| n == "cwd")
+        } else {
+            true // no agents table yet → fresh install, nothing to reset
+        };
+        if providers_present.is_some() || !agents_has_cwd {
             for stmt in [
                 "DROP TABLE IF EXISTS messages",
                 "DROP TABLE IF EXISTS sessions",
@@ -104,6 +118,8 @@ impl DatabaseConnection {
                 description TEXT,
                 avatar TEXT,
                 base_url TEXT,
+                cwd TEXT NOT NULL DEFAULT '',
+                permission_mode TEXT NOT NULL DEFAULT 'default',
                 config TEXT NOT NULL DEFAULT '{}',
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL
@@ -119,8 +135,6 @@ impl DatabaseConnection {
                 id TEXT PRIMARY KEY,
                 agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE RESTRICT,
                 name TEXT,
-                cwd TEXT NOT NULL,
-                permission_mode TEXT NOT NULL DEFAULT 'default',
                 favorite INTEGER NOT NULL DEFAULT 0,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
@@ -131,17 +145,6 @@ impl DatabaseConnection {
         )
         .execute(&self.pool)
         .await?;
-
-        // For installs created before claude_session_id was added: best-effort add
-        // the column then backfill it from the row's id (which used to do double duty).
-        let _ = sqlx::query(
-            "ALTER TABLE sessions ADD COLUMN claude_session_id TEXT NOT NULL DEFAULT ''",
-        )
-        .execute(&self.pool)
-        .await;
-        sqlx::query("UPDATE sessions SET claude_session_id = id WHERE claude_session_id = ''")
-            .execute(&self.pool)
-            .await?;
 
         sqlx::query(
             r#"

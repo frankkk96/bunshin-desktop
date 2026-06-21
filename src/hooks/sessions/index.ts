@@ -20,7 +20,8 @@ export function useRunningSessions() {
   return useQuery({
     queryKey: RUNNING_KEY,
     queryFn: sessionsApi.listRunning,
-    refetchInterval: 5000,
+    refetchInterval: 2000,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -55,6 +56,24 @@ export function useDeleteSession() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => sessionsApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useRenameSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string | null }) =>
+      sessionsApi.rename(id, name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useSetSessionFavorite() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, favorite }: { id: string; favorite: boolean }) =>
+      sessionsApi.setFavorite(id, favorite),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }

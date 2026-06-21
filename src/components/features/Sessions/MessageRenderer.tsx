@@ -29,7 +29,9 @@ export function MessageRenderer({ message }: MessageRendererProps) {
       return <ToolResultBlocks payload={payload} />
 
     case 'system':
-      return <SystemChip payload={payload} />
+      // The "session started · model" head is redundant (the header shows the
+      // model) — keep the transcript clean.
+      return null
 
     case 'result':
       return <ResultChip payload={payload} />
@@ -227,28 +229,11 @@ function ToolResultCard({ text, isError }: { text: string; isError: boolean }) {
   )
 }
 
-function SystemChip({ payload }: { payload: any }) {
-  if (payload?.subtype === 'init') {
-    return (
-      <div className="text-[11px] text-muted-foreground text-center">
-        session started · model {payload.model ?? 'unknown'}
-      </div>
-    )
-  }
-  return null
-}
-
 function ResultChip({ payload }: { payload: any }) {
-  const cost = payload?.total_cost_usd
   const dur = payload?.duration_ms
-  const turns = payload?.num_turns
+  if (dur == null) return null
   return (
-    <div className="text-[11px] text-muted-foreground text-center">
-      turn done
-      {dur != null && ` · ${(dur / 1000).toFixed(1)}s`}
-      {turns != null && ` · ${turns} turn(s)`}
-      {cost != null && ` · $${cost.toFixed(4)}`}
-    </div>
+    <div className="text-[11px] text-muted-foreground/70 pl-1">{(dur / 1000).toFixed(1)}s</div>
   )
 }
 

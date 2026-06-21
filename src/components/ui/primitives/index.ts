@@ -21,10 +21,3 @@ export {
 export { Separator } from './separator'
 export { Label } from './label'
 export { Toaster } from './toaster'
-export {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './select'
