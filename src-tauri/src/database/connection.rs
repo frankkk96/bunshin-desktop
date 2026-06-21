@@ -76,20 +76,25 @@ impl DatabaseConnection {
             }
         }
 
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS providers (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                type TEXT NOT NULL CHECK (type IN ('subscription','api')),
-                base_url TEXT,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
-            )
-            "#,
+        // Providers were merged into agents: each agent now owns its own auth
+        // (type + base_url + key + isolated profile). The previous `providers`
+        // table is the marker of the old schema — if it's present, hard-reset the
+        // app tables (agreed early-data reset; no in-place migration).
+        let providers_present: Option<(String,)> = sqlx::query_as(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='providers'",
         )
-        .execute(&self.pool)
+        .fetch_optional(&self.pool)
         .await?;
+        if providers_present.is_some() {
+            for stmt in [
+                "DROP TABLE IF EXISTS messages",
+                "DROP TABLE IF EXISTS sessions",
+                "DROP TABLE IF EXISTS agents",
+                "DROP TABLE IF EXISTS providers",
+            ] {
+                sqlx::query(stmt).execute(&self.pool).await?;
+            }
+        }
 
         sqlx::query(
             r#"
@@ -98,7 +103,9 @@ impl DatabaseConnection {
                 alias TEXT NOT NULL,
                 description TEXT,
                 avatar TEXT,
-                provider_id TEXT NOT NULL REFERENCES providers(id) ON DELETE RESTRICT,
+                provider_type TEXT NOT NULL DEFAULT 'subscription'
+                    CHECK (provider_type IN ('subscription','api')),
+                base_url TEXT,
                 config TEXT NOT NULL DEFAULT '{}',
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL
@@ -107,18 +114,6 @@ impl DatabaseConnection {
         )
         .execute(&self.pool)
         .await?;
-
-        // Drop the legacy `pinned` column from existing installs (best-effort:
-        // SQLite ignores the error if the column was never present).
-        let _ = sqlx::query("ALTER TABLE agents DROP COLUMN pinned")
-            .execute(&self.pool)
-            .await;
-
-        // For installs created before the per-agent Claude Code config column:
-        // best-effort add it; existing rows get an empty `{}` (claude defaults).
-        let _ = sqlx::query("ALTER TABLE agents ADD COLUMN config TEXT NOT NULL DEFAULT '{}'")
-            .execute(&self.pool)
-            .await;
 
         sqlx::query(
             r#"
@@ -171,10 +166,6 @@ impl DatabaseConnection {
         )
         .execute(&self.pool)
         .await?;
-
-        sqlx::query("CREATE INDEX IF NOT EXISTS idx_agents_provider ON agents(provider_id)")
-            .execute(&self.pool)
-            .await?;
 
         sqlx::query("CREATE INDEX IF NOT EXISTS idx_sessions_agent ON sessions(agent_id)")
             .execute(&self.pool)

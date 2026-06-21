@@ -1,14 +1,5 @@
 export type ProviderType = 'subscription' | 'api'
 
-export interface Provider {
-  id: string
-  name: string
-  type: ProviderType
-  baseUrl: string | null
-  createdAt: number
-  updatedAt: number
-}
-
 export interface EnvVar {
   key: string
   value: string
@@ -51,7 +42,10 @@ export interface Agent {
   alias: string
   description: string | null
   avatar: string | null
-  providerId: string
+  /** Auth type, locked after creation. */
+  providerType: ProviderType
+  /** Custom base URL (API agents only). */
+  baseUrl: string | null
   config: AgentConfig
   createdAt: number
   updatedAt: number

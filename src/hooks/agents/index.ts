@@ -41,3 +41,25 @@ export function useDeleteAgent() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
+
+export function useDuplicateAgent() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => agentsApi.duplicate(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useHasAgentApiKey(agentId: string | undefined) {
+  return useQuery({
+    queryKey: [...KEY, agentId, 'has-key'],
+    queryFn: () => agentsApi.hasApiKey(agentId!),
+    enabled: !!agentId,
+  })
+}
+
+export function useSignInAgent() {
+  return useMutation({
+    mutationFn: (agentId: string) => agentsApi.signIn(agentId),
+  })
+}

@@ -1,9 +1,7 @@
 use crate::claude_agent::manager::{ClaudeSessionManager, RunningSessionInfo};
-use crate::claude_agent::process::provider_profile_dir;
+use crate::claude_agent::process::agent_profile_dir;
 use crate::database::models::{PermissionMode, ProviderType, Session};
-use crate::database::repositories::{
-    AgentRepository, MessageRepository, ProviderRepository, SessionRepository,
-};
+use crate::database::repositories::{AgentRepository, MessageRepository, SessionRepository};
 use crate::database::AppState;
 use crate::secure_storage::SecureStorage;
 use serde::Deserialize;
@@ -11,7 +9,8 @@ use std::path::Path;
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, State};
 
-pub const PROVIDER_KEY_SERVICE: &str = "provider_keys";
+/// Secure-storage namespace for per-agent API keys (keyed by agent id).
+pub const AGENT_KEY_SERVICE: &str = "agent_keys";
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,10 +33,10 @@ pub struct SendMessageInput {
     pub attachments: Vec<serde_json::Value>,
 }
 
-fn load_provider_api_key(app: &AppHandle, provider_id: &str) -> Result<Option<String>, String> {
+fn load_agent_api_key(app: &AppHandle, agent_id: &str) -> Result<Option<String>, String> {
     let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let storage = SecureStorage::with_base_dir(PROVIDER_KEY_SERVICE.to_string(), app_data_dir);
-    storage.get(provider_id).map_err(|e| e.to_string())
+    let storage = SecureStorage::with_base_dir(AGENT_KEY_SERVICE.to_string(), app_data_dir);
+    storage.get(agent_id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -53,13 +52,6 @@ pub async fn start_session(
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {} not found", input.agent_id))?;
-
-    let provider_repo = ProviderRepository::new(state.db_pool.clone());
-    let provider = provider_repo
-        .get(&agent.provider_id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("provider {} not found", agent.provider_id))?;
 
     if !Path::new(&input.cwd).is_dir() {
         return Err(format!(
@@ -79,13 +71,13 @@ pub async fn start_session(
         return Err(format!("DUPLICATE_SESSION:{}", existing.id));
     }
 
-    let api_key = if matches!(provider.type_, ProviderType::Api) {
-        match load_provider_api_key(&app, &provider.id)? {
+    let api_key = if matches!(agent.provider_type, ProviderType::Api) {
+        match load_agent_api_key(&app, &agent.id)? {
             Some(k) if !k.is_empty() => Some(k),
             _ => {
                 return Err(format!(
-                    "no API key stored for provider '{}' — set one in Settings → Providers",
-                    provider.name
+                    "no API key set for agent '{}' — add one in Settings → Agents",
+                    agent.alias
                 ))
             }
         }
@@ -116,8 +108,7 @@ pub async fn start_session(
     // new session immediately without waiting for claude CLI bootstrap.
     let manager_clone = manager.inner().clone();
     let session_clone = session.clone();
-    let provider_clone = provider.clone();
-    let config_clone = agent.config.clone();
+    let agent_clone = agent.clone();
     let api_key_owned = api_key.map(|s| s.to_string());
     let pool_clone = state.db_pool.clone();
     let app_clone = app.clone();
@@ -125,8 +116,7 @@ pub async fn start_session(
         if let Err(e) = manager_clone
             .start(
                 &session_clone,
-                &provider_clone,
-                &config_clone,
+                &agent_clone,
                 api_key_owned.as_deref(),
                 false,
                 pool_clone,
@@ -169,15 +159,8 @@ pub async fn resume_session(
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {} not found", session.agent_id))?;
 
-    let provider_repo = ProviderRepository::new(state.db_pool.clone());
-    let provider = provider_repo
-        .get(&agent.provider_id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("provider {} not found", agent.provider_id))?;
-
-    let api_key = if matches!(provider.type_, ProviderType::Api) {
-        load_provider_api_key(&app, &provider.id)?
+    let api_key = if matches!(agent.provider_type, ProviderType::Api) {
+        load_agent_api_key(&app, &agent.id)?
     } else {
         None
     };
@@ -185,8 +168,7 @@ pub async fn resume_session(
     manager
         .start(
             &session,
-            &provider,
-            &agent.config,
+            &agent,
             api_key.as_deref(),
             true,
             state.db_pool.clone(),
@@ -306,22 +288,15 @@ pub async fn clear_session(
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {} not found", session.agent_id))?;
-    let provider_repo = ProviderRepository::new(state.db_pool.clone());
-    let provider = provider_repo
-        .get(&agent.provider_id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("provider {} not found", agent.provider_id))?;
-    let api_key = if matches!(provider.type_, ProviderType::Api) {
-        load_provider_api_key(&app, &provider.id)?
+    let api_key = if matches!(agent.provider_type, ProviderType::Api) {
+        load_agent_api_key(&app, &agent.id)?
     } else {
         None
     };
     manager
         .start(
             &session,
-            &provider,
-            &agent.config,
+            &agent,
             api_key.as_deref(),
             false,
             state.db_pool.clone(),
@@ -340,45 +315,45 @@ pub async fn list_running_sessions(
 }
 
 #[tauri::command]
-pub async fn set_provider_api_key(
-    provider_id: String,
+pub async fn set_agent_api_key(
+    agent_id: String,
     api_key: String,
     app: AppHandle,
 ) -> Result<(), String> {
     let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let storage = SecureStorage::with_base_dir(PROVIDER_KEY_SERVICE.to_string(), app_data_dir);
+    let storage = SecureStorage::with_base_dir(AGENT_KEY_SERVICE.to_string(), app_data_dir);
     if api_key.is_empty() {
-        storage.delete(&provider_id).map_err(|e| e.to_string())
+        storage.delete(&agent_id).map_err(|e| e.to_string())
     } else {
-        storage.set(&provider_id, &api_key).map_err(|e| e.to_string())
+        storage.set(&agent_id, &api_key).map_err(|e| e.to_string())
     }
 }
 
 #[tauri::command]
-pub async fn has_provider_api_key(provider_id: String, app: AppHandle) -> Result<bool, String> {
-    Ok(load_provider_api_key(&app, &provider_id)?.is_some())
+pub async fn has_agent_api_key(agent_id: String, app: AppHandle) -> Result<bool, String> {
+    Ok(load_agent_api_key(&app, &agent_id)?.is_some())
 }
 
-/// Open a terminal window running `claude /login` against the provider's
-/// isolated `CLAUDE_CONFIG_DIR`. Subscription providers need this once per
-/// provider so OAuth tokens land in the right profile dir.
+/// Open a terminal window running `claude /login` against the agent's isolated
+/// `CLAUDE_CONFIG_DIR`. Subscription agents need this once so OAuth tokens land
+/// in the right profile dir.
 #[tauri::command]
-pub async fn sign_in_provider(
-    provider_id: String,
+pub async fn sign_in_agent(
+    agent_id: String,
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<(), String> {
-    let provider = ProviderRepository::new(state.db_pool.clone())
-        .get(&provider_id)
+    let agent = AgentRepository::new(state.db_pool.clone())
+        .get(&agent_id)
         .await
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("provider {} not found", provider_id))?;
+        .ok_or_else(|| format!("agent {} not found", agent_id))?;
 
-    if !matches!(provider.type_, ProviderType::Subscription) {
-        return Err("Sign-in only applies to subscription providers".into());
+    if !matches!(agent.provider_type, ProviderType::Subscription) {
+        return Err("Sign-in only applies to subscription agents".into());
     }
 
-    let profile_dir = provider_profile_dir(&app, &provider.id).map_err(|e| e.to_string())?;
+    let profile_dir = agent_profile_dir(&app, &agent.id).map_err(|e| e.to_string())?;
     open_login_terminal(&profile_dir).map_err(|e| e.to_string())
 }
 
@@ -444,4 +419,3 @@ fn open_login_terminal(profile_dir: &Path) -> Result<(), String> {
         last_err.unwrap_or_else(|| "tried x-terminal-emulator, gnome-terminal, konsole, xterm".into())
     ))
 }
-

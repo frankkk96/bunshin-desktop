@@ -1,8 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { Outlet } from 'react-router-dom'
-import { Sidebar } from './Sidebar'
-import { useLocation } from 'react-router-dom'
-import { openSettingsWindow } from '@/components/features/Settings/SettingsWindow'
 import { initCrashReporting } from '@/lib/core/crash-reporting/init'
 
 async function initApp() {
@@ -28,8 +25,6 @@ async function initApp() {
 }
 
 function MainLayoutContent() {
-  const location = useLocation()
-  const activeTab = location.pathname.split('/')[1] || 'sessions'
   const initRef = useRef(false)
 
   useEffect(() => {
@@ -42,12 +37,9 @@ function MainLayoutContent() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar activeTab={activeTab} onSettingsClick={() => openSettingsWindow('account')} />
-        <main className="flex-1 overflow-hidden">
-          <Outlet />
-        </main>
-      </div>
+      <main className="flex-1 overflow-hidden">
+        <Outlet />
+      </main>
     </div>
   )
 }

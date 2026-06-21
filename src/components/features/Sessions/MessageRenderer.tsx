@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, LogIn } from 'lucide-react'
 import { MacOSButton } from '@/components/ui'
-import { useSignInProvider } from '@/hooks/providers'
+import { useSignInAgent } from '@/hooks/agents'
 import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
 import type { Message } from '@/lib/types'
@@ -257,19 +257,19 @@ function ResultChip({ payload }: { payload: any }) {
 
 function ProcessExitChip({ payload }: { payload: any }) {
   const needsLogin = !!payload?.needs_login
-  const providerId: string | undefined = payload?.provider_id
+  const agentId: string | undefined = payload?.agent_id
   return (
     <div className="text-[11px] text-center text-amber-600">
       {needsLogin ? (
         <span className="text-foreground">
-          This provider isn't signed in yet — run <code className="px-1 py-0.5 rounded bg-muted text-[10px]">claude /login</code> in its isolated profile.
+          This agent isn't signed in yet — run <code className="px-1 py-0.5 rounded bg-muted text-[10px]">claude /login</code> in its isolated profile.
         </span>
       ) : (
         <>Subprocess exited (status: {payload?.status ?? 'unknown'}, code: {payload?.code ?? '?'})</>
       )}
-      {needsLogin && providerId && (
+      {needsLogin && agentId && (
         <div className="mt-2 flex justify-center">
-          <SignInButton providerId={providerId} />
+          <SignInButton agentId={agentId} />
         </div>
       )}
       {payload?.stderr_tail && (
@@ -281,11 +281,11 @@ function ProcessExitChip({ payload }: { payload: any }) {
   )
 }
 
-export function SignInButton({ providerId }: { providerId: string }) {
-  const signIn = useSignInProvider()
+export function SignInButton({ agentId }: { agentId: string }) {
+  const signIn = useSignInAgent()
   const handle = async () => {
     try {
-      await signIn.mutateAsync(providerId)
+      await signIn.mutateAsync(agentId)
       toast.success('Terminal opened — complete the login there, then resume the session.')
     } catch (err) {
       toast.error(String(err))

@@ -1,5 +1,5 @@
 use crate::claude_agent::process::{ClaudeProcess, ProcessStatus, SpawnConfig};
-use crate::database::models::{AgentConfig, Provider, Session};
+use crate::database::models::{Agent, Session};
 use anyhow::Result;
 use dashmap::DashMap;
 use sqlx::SqlitePool;
@@ -19,8 +19,7 @@ impl ClaudeSessionManager {
     pub async fn start(
         &self,
         session: &Session,
-        provider: &Provider,
-        config: &AgentConfig,
+        agent: &Agent,
         api_key: Option<&str>,
         resume: bool,
         pool: SqlitePool,
@@ -32,8 +31,7 @@ impl ClaudeSessionManager {
         let process = ClaudeProcess::spawn(
             SpawnConfig {
                 session,
-                provider,
-                config,
+                agent,
                 api_key,
                 resume,
             },

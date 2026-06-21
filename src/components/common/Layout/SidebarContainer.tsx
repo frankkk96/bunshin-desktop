@@ -36,6 +36,12 @@ interface SidebarContainerProps {
 
   // Action button (like add contact)
   actionButton?: ActionButton
+
+  // Action button rendered inline to the right of the search field
+  inlineAction?: ActionButton
+
+  // Pinned footer (e.g. settings entry) rendered below the scroll area
+  footer?: React.ReactNode
 }
 
 export function SidebarContainer({
@@ -52,6 +58,8 @@ export function SidebarContainer({
   onSearchChange,
   isLoading = false,
   actionButton,
+  inlineAction,
+  footer,
 }: SidebarContainerProps) {
   // Use searchQuery if provided, otherwise use searchValue
   const currentSearchValue = searchQuery || searchValue || ''
@@ -63,18 +71,25 @@ export function SidebarContainer({
         width,
       }}
     >
-      {/* Header */}
-      <div data-tauri-drag-region className="p-3 select-none">
+      {/* Header — extra top padding clears the macOS traffic lights now that this
+          is the left-most pane (no icon rail). */}
+      <div data-tauri-drag-region className="px-3 pb-3 pt-9 select-none">
         <div
           data-tauri-drag-region
-          className={cn('flex items-center justify-between', showSearch ? 'mb-2' : '')}
+          className={cn(
+            'flex items-center justify-between',
+            showSearch && (title || actionButton || headerIcon) ? 'mb-2' : '',
+            !title && !actionButton && !headerIcon ? 'hidden' : '',
+          )}
         >
-          <h2
-            data-tauri-drag-region
-            className="text-lg font-semibold m-0 text-foreground min-h-[30px]"
-          >
-            {title}
-          </h2>
+          {title && (
+            <h2
+              data-tauri-drag-region
+              className="text-lg font-semibold m-0 text-foreground min-h-[30px]"
+            >
+              {title}
+            </h2>
+          )}
 
           {/* Action buttons */}
           <div className="flex items-center gap-1">
@@ -116,20 +131,38 @@ export function SidebarContainer({
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar (+ optional inline action, e.g. New Session) */}
         {showSearch && (
-          <div data-tauri-drag-region className="relative flex items-center">
-            <IoSearchOutline
-              size={14}
-              className="absolute left-2.5 pointer-events-none text-muted-foreground"
-            />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={currentSearchValue}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              className="bg-muted w-full pl-8 pr-2.5 py-2 border-[1px] rounded-md text-xs outline-none text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-ring border-border"
-            />
+          <div data-tauri-drag-region className="flex items-center gap-1.5">
+            <div className="relative flex items-center flex-1">
+              <IoSearchOutline
+                size={14}
+                className="absolute left-2.5 pointer-events-none text-muted-foreground"
+              />
+              <input
+                type="text"
+                placeholder={searchPlaceholder}
+                value={currentSearchValue}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                className="bg-muted w-full pl-8 pr-2.5 py-2 border-[1px] rounded-md text-xs outline-none text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-ring border-border"
+              />
+            </div>
+            {inlineAction && (
+              <MacOSTooltip>
+                <MacOSTooltipTrigger asChild>
+                  <MacOSButton
+                    onClick={inlineAction.onClick}
+                    variant="outline"
+                    className="h-8 w-8 p-0 flex-shrink-0"
+                  >
+                    <inlineAction.icon size={16} />
+                  </MacOSButton>
+                </MacOSTooltipTrigger>
+                <MacOSTooltipContent side="bottom" sideOffset={5}>
+                  {inlineAction.tooltip}
+                </MacOSTooltipContent>
+              </MacOSTooltip>
+            )}
           </div>
         )}
       </div>
@@ -138,6 +171,9 @@ export function SidebarContainer({
       <div className="flex-1 overflow-x-hidden">
         {isLoading ? <div className="p-4 text-muted-foreground">Loading...</div> : children}
       </div>
+
+      {/* Pinned footer */}
+      {footer && <div className="border-t border-border/60 p-2">{footer}</div>}
     </div>
   )
 }

@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { IoAddOutline, IoChatbubblesOutline } from 'react-icons/io5'
+import { IoAddOutline, IoChatbubblesOutline, IoSettingsOutline } from 'react-icons/io5'
+import { Download } from 'lucide-react'
+import { getVersion } from '@tauri-apps/api/app'
 import { SidebarContainer } from '@/components/common'
 import { MacOSButton } from '@/components/ui'
+import { openSettingsWindow } from '@/components/features/Settings/SettingsWindow'
+import { useUpdater } from '@/components/features/Updater/useUpdater'
+import { UpdateDialog } from '@/components/features/Updater/UpdateDialog'
 import { useSessions } from '@/hooks/sessions'
 import { SessionsList } from './SessionsList'
 import { SessionView } from './SessionView'
@@ -55,16 +60,16 @@ export function SessionsView() {
   return (
     <div className="flex h-full">
       <SidebarContainer
-        title="Sessions"
-        searchPlaceholder="Search sessions"
+        searchPlaceholder="Search"
         searchValue={search}
         onSearchChange={setSearch}
         isLoading={isLoading}
-        actionButton={{
+        inlineAction={{
           icon: IoAddOutline,
-          tooltip: 'Create Session',
+          tooltip: 'New Session',
           onClick: openCreate,
         }}
+        footer={<SidebarFooter />}
       >
         <SessionsList
           sessions={filtered}
@@ -95,6 +100,46 @@ export function SessionsView() {
             navigate(`/sessions/${s.id}`)
           }}
         />
+      )}
+    </div>
+  )
+}
+
+function SidebarFooter() {
+  const { updateAvailable, hasUpdate } = useUpdater()
+  const [version, setVersion] = useState('')
+  const [showDialog, setShowDialog] = useState(false)
+
+  useEffect(() => {
+    getVersion()
+      .then(setVersion)
+      .catch(() => {})
+  }, [])
+
+  return (
+    <div className="flex items-center justify-between gap-1">
+      <button
+        onClick={() => openSettingsWindow('agents')}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+      >
+        <IoSettingsOutline size={15} />
+        Settings
+      </button>
+
+      {hasUpdate && updateAvailable ? (
+        <>
+          <button
+            onClick={() => setShowDialog(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-interactive hover:bg-interactive/10 transition-colors"
+            title={`Update available: v${updateAvailable.version}`}
+          >
+            <Download size={13} />
+            Update
+          </button>
+          <UpdateDialog open={showDialog} onOpenChange={setShowDialog} update={updateAvailable} />
+        </>
+      ) : (
+        version && <span className="text-[11px] text-muted-foreground/70 pr-1.5">v{version}</span>
       )}
     </div>
   )

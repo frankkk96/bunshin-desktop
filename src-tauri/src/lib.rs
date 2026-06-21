@@ -204,12 +204,7 @@ async fn export_all_data(app: tauri::AppHandle) -> Result<String, String> {
     let mut database_data: HashMap<String, Vec<HashMap<String, serde_json::Value>>> =
         HashMap::new();
 
-    const ALLOWED_TABLES: &[&str] = &[
-        "providers",
-        "agents",
-        "sessions",
-        "messages",
-    ];
+    const ALLOWED_TABLES: &[&str] = &["agents", "sessions", "messages"];
 
     let app_data_dir = app
         .path()
@@ -558,21 +553,16 @@ pub fn run() {
             proxy_media,
             media_get_display_url,
             media_get_base64,
-            // Providers
-            list_providers,
-            get_provider,
-            create_provider,
-            update_provider,
-            delete_provider,
-            set_provider_api_key,
-            has_provider_api_key,
-            sign_in_provider,
-            // Agents
+            // Agents (each owns its provider auth + Claude Code config)
             list_agents,
             get_agent,
             create_agent,
             update_agent,
             delete_agent,
+            duplicate_agent,
+            set_agent_api_key,
+            has_agent_api_key,
+            sign_in_agent,
             // Sessions (read + lifecycle)
             list_sessions,
             delete_session,

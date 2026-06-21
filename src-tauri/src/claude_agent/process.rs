@@ -2,7 +2,7 @@ use crate::claude_agent::protocol::{
     build_control_success, build_initialize, build_interrupt, build_user_message,
     ClaudeStreamEvent,
 };
-use crate::database::models::{AgentConfig, Provider, ProviderType, Session};
+use crate::database::models::{Agent, AgentConfig, ProviderType, Session};
 use crate::database::repositories::MessageRepository;
 use anyhow::{anyhow, Context, Result};
 use serde::Serialize;
@@ -22,18 +22,18 @@ pub enum ProcessStatus {
     Crashed,
 }
 
-/// Resolve the per-provider config directory used as `CLAUDE_CONFIG_DIR`.
+/// Resolve the per-agent config directory used as `CLAUDE_CONFIG_DIR`.
 /// Creates it on first use so the `claude` CLI can write its OAuth tokens,
 /// settings, etc. without polluting the user's `~/.claude/`.
-pub fn provider_profile_dir(app: &AppHandle, provider_id: &str) -> Result<std::path::PathBuf> {
+pub fn agent_profile_dir(app: &AppHandle, agent_id: &str) -> Result<std::path::PathBuf> {
     let dir = app
         .path()
         .app_data_dir()
         .map_err(|e| anyhow!("could not resolve app data dir: {e}"))?
         .join("claude-profiles")
-        .join(provider_id);
+        .join(agent_id);
     std::fs::create_dir_all(&dir)
-        .with_context(|| format!("could not create provider profile dir at {}", dir.display()))?;
+        .with_context(|| format!("could not create agent profile dir at {}", dir.display()))?;
     Ok(dir)
 }
 
@@ -47,8 +47,7 @@ pub struct ClaudeProcess {
 
 pub struct SpawnConfig<'a> {
     pub session: &'a Session,
-    pub provider: &'a Provider,
-    pub config: &'a AgentConfig,
+    pub agent: &'a Agent,
     pub api_key: Option<&'a str>,
     pub resume: bool,
 }
@@ -168,9 +167,9 @@ impl ClaudeProcess {
         app: AppHandle,
     ) -> Result<Arc<Self>> {
         let session = cfg.session;
-        let provider = cfg.provider;
+        let agent = cfg.agent;
 
-        let profile_dir = provider_profile_dir(&app, &provider.id)?;
+        let profile_dir = agent_profile_dir(&app, &agent.id)?;
 
         let mut cmd = Command::new("claude");
 
@@ -208,17 +207,17 @@ impl ClaudeProcess {
 
         // Per-agent Claude Code configuration (model, effort, system prompt,
         // disabled tools, permissions, env, MCP, raw settings overrides).
-        apply_agent_config(&mut cmd, cfg.config);
+        apply_agent_config(&mut cmd, &agent.config);
 
         cmd.current_dir(&session.cwd);
 
-        match provider.type_ {
+        match agent.provider_type {
             ProviderType::Subscription => {
                 // OAuth lives in `profile_dir/.credentials.json`; user must run
-                // sign-in once per provider (Settings → Provider → Sign in).
+                // sign-in once per agent (Settings → Agents → Sign in).
             }
             ProviderType::Api => {
-                if let Some(base_url) = provider.base_url.as_deref() {
+                if let Some(base_url) = agent.base_url.as_deref() {
                     cmd.env("ANTHROPIC_BASE_URL", base_url);
                 }
                 if let Some(key) = cfg.api_key {
@@ -229,8 +228,8 @@ impl ClaudeProcess {
 
         cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
 
-        let provider_id_for_exit = provider.id.clone();
-        let provider_type_for_exit = provider.type_;
+        let agent_id_for_exit = agent.id.clone();
+        let provider_type_for_exit = agent.provider_type;
 
         #[cfg(target_os = "windows")]
         {
@@ -463,7 +462,7 @@ impl ClaudeProcess {
                 },
                 "stderr_tail": stderr_tail,
                 "needs_login": needs_login,
-                "provider_id": provider_id_for_exit,
+                "agent_id": agent_id_for_exit,
             });
             let repo = MessageRepository::new(pool_wait);
             if let Ok(message) = repo

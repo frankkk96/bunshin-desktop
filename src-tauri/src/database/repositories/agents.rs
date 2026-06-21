@@ -3,7 +3,7 @@ use crate::error::{AppError, AppResult};
 use sqlx::SqlitePool;
 
 const SELECT_COLS: &str =
-    "id, alias, description, avatar, provider_id, config, created_at, updated_at";
+    "id, alias, description, avatar, provider_type, base_url, config, created_at, updated_at";
 
 pub struct AgentRepository {
     pool: SqlitePool,
@@ -34,15 +34,17 @@ impl AgentRepository {
     pub async fn create(&self, agent: Agent) -> AppResult<Agent> {
         sqlx::query(
             r#"
-            INSERT INTO agents (id, alias, description, avatar, provider_id, config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO agents
+                (id, alias, description, avatar, provider_type, base_url, config, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(&agent.id)
         .bind(&agent.alias)
         .bind(agent.description.as_deref())
         .bind(agent.avatar.as_deref())
-        .bind(&agent.provider_id)
+        .bind(agent.provider_type.as_str())
+        .bind(agent.base_url.as_deref())
         .bind(agent.config.to_json())
         .bind(agent.created_at)
         .bind(agent.updated_at)
@@ -51,28 +53,29 @@ impl AgentRepository {
         Ok(agent)
     }
 
-    /// Update an agent. Provider is intentionally immutable: callers are expected to
-    /// pass the original `provider_id`; if it differs from what's stored we reject.
+    /// Update an agent. `provider_type` is immutable: callers pass the original
+    /// value; a mismatch is rejected.
     pub async fn update(&self, agent: Agent) -> AppResult<Agent> {
         let existing = self
             .get(&agent.id)
             .await?
             .ok_or_else(|| AppError::NotFound(format!("agent {}", agent.id)))?;
-        if existing.provider_id != agent.provider_id {
+        if existing.provider_type != agent.provider_type {
             return Err(AppError::InvalidInput(
-                "agent provider cannot be changed after creation".to_string(),
+                "agent type cannot be changed after creation".to_string(),
             ));
         }
         sqlx::query(
             r#"
             UPDATE agents
-            SET alias = ?, description = ?, avatar = ?, config = ?, updated_at = ?
+            SET alias = ?, description = ?, avatar = ?, base_url = ?, config = ?, updated_at = ?
             WHERE id = ?
             "#,
         )
         .bind(&agent.alias)
         .bind(agent.description.as_deref())
         .bind(agent.avatar.as_deref())
+        .bind(agent.base_url.as_deref())
         .bind(agent.config.to_json())
         .bind(agent.updated_at)
         .bind(&agent.id)

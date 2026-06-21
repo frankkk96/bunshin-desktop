@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate, RouteObject, Outlet } from 'react-router-dom'
 import { SessionsView } from '@/components/features/Sessions'
-import { ContactsView } from '@/components/features/Contacts'
 import { SettingsWindowPage } from '@/components/features/Settings/SettingsWindowPage'
 import { MacOSToaster } from '@/components/ui'
 import { MainLayout } from './components/layout/MainLayout'
@@ -32,12 +31,9 @@ const routes: RouteObject[] = [
             element: <SessionsView />,
           },
           {
-            path: 'agents',
-            element: <ContactsView />,
-          },
-          {
-            path: 'agents/:contactId',
-            element: <ContactsView />,
+            // Agents now live in Settings → Agents; keep old links working.
+            path: 'agents/*',
+            element: <Navigate to="/sessions" replace />,
           },
           {
             path: '*',

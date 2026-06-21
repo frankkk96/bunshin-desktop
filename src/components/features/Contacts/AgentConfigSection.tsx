@@ -117,6 +117,7 @@ export function AgentConfigSection({ agent }: Props) {
         alias: agent.alias,
         description: agent.description,
         avatar: agent.avatar,
+        baseUrl: agent.baseUrl,
         config: clean,
       })
       toast.success('配置已保存 · 新建会话或 Clear 重启后生效')

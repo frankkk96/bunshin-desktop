@@ -19,7 +19,7 @@ import { useAgents } from '@/hooks/agents'
 import { useStartSession } from '@/hooks/sessions'
 import { pickDirectory } from '@/lib/tauri/service/sessions'
 import { toast } from '@/lib/core/utils/toast'
-import { AgentCreationModal } from '@/components/features/Contacts/AgentCreationModal'
+import { openSettingsWindow } from '@/components/features/Settings/SettingsWindow'
 import type { PermissionMode, Session } from '@/lib/types'
 
 interface StartSessionModalProps {
@@ -50,12 +50,16 @@ export function StartSessionModal({
   const [cwd, setCwd] = useState('')
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default')
   const [name, setName] = useState('')
-  const [creatingAgent, setCreatingAgent] = useState(false)
 
   // Refresh agents whenever the modal opens — prevents the picker from showing
   // stale data when the user just created an agent in another window.
   useEffect(() => {
     void agentsQuery.refetch()
+    // Agents are managed in the separate Settings window; refetch when the user
+    // comes back so a freshly added agent shows up in the picker.
+    const onFocus = () => void agentsQuery.refetch()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -114,8 +118,8 @@ export function StartSessionModal({
             {agents.length === 0 ? (
               <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-border px-3 py-2.5">
                 <span className="text-sm text-muted-foreground">No agents yet.</span>
-                <MacOSButton onClick={() => setCreatingAgent(true)}>
-                  Create an agent
+                <MacOSButton variant="outline" onClick={() => openSettingsWindow('agents')}>
+                  Set up in Settings
                 </MacOSButton>
               </div>
             ) : (
@@ -186,17 +190,6 @@ export function StartSessionModal({
           </MacOSButton>
         </div>
       </MacOSSheetContent>
-
-      {creatingAgent && (
-        <AgentCreationModal
-          onClose={() => setCreatingAgent(false)}
-          onCreated={(agent) => {
-            setCreatingAgent(false)
-            void agentsQuery.refetch()
-            setAgentId(agent.id)
-          }}
-        />
-      )}
     </MacOSSheet>
   )
 }

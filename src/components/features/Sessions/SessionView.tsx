@@ -22,7 +22,7 @@ import {
   MacOSTooltipTrigger,
 } from '@/components/ui'
 import { AgentAvatar, IconButton } from '@/components/common'
-import { useAppNavigation } from '@/components/common/Layout/useAppNavigation'
+import { openSettingsWindow } from '@/components/features/Settings/SettingsWindow'
 import { useAgent } from '@/hooks/agents'
 import {
   useCancelQuery,
@@ -135,8 +135,8 @@ export function SessionView({ session }: SessionViewProps) {
     for (let i = allMessages.length - 1; i >= 0; i--) {
       const m = allMessages[i]
       if (m.kind !== 'process_exit') continue
-      if (m.payload?.needs_login && m.payload?.provider_id) {
-        return { providerId: String(m.payload.provider_id) }
+      if (m.payload?.needs_login && m.payload?.agent_id) {
+        return { agentId: String(m.payload.agent_id) }
       }
       // Stop at the latest process_exit even if it isn't a login error —
       // otherwise we'd surface a stale prompt from earlier in history.
@@ -208,8 +208,6 @@ export function SessionView({ session }: SessionViewProps) {
     }
   }
 
-  const { navigateToAgent } = useAppNavigation()
-
   return (
     <div className="flex flex-col h-full bg-background">
       <header
@@ -218,7 +216,7 @@ export function SessionView({ session }: SessionViewProps) {
       >
         <div className="p-3 flex items-center gap-3 min-w-0">
           <div
-            onClick={() => agent && navigateToAgent(agent.id)}
+            onClick={() => openSettingsWindow('agents')}
             className="hover:opacity-80 cursor-pointer"
           >
             <AgentAvatar agent={agent} size={36} />
@@ -227,7 +225,7 @@ export function SessionView({ session }: SessionViewProps) {
             <div className="font-medium text-sm flex items-center gap-1.5">
               <span
                 className="cursor-pointer hover:opacity-75 truncate"
-                onClick={() => agent && navigateToAgent(agent.id)}
+                onClick={() => openSettingsWindow('agents')}
               >
                 {session.name || agent?.alias || 'Session'}
               </span>
@@ -236,7 +234,7 @@ export function SessionView({ session }: SessionViewProps) {
                 busy={turnBusy}
                 needsLogin={!!loginPrompt}
               />
-              {loginPrompt && <SignInButton providerId={loginPrompt.providerId} />}
+              {loginPrompt && <SignInButton agentId={loginPrompt.agentId} />}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1 max-w-[420px]">
               <span className="font-mono">{session.cwd}</span>
