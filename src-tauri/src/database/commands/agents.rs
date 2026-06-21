@@ -1,6 +1,6 @@
 use crate::claude_agent::commands::AGENT_KEY_SERVICE;
 use crate::claude_agent::process::agent_profile_dir;
-use crate::database::models::{Agent, AgentConfig, ProviderType};
+use crate::database::models::{Agent, AgentConfig};
 use crate::database::repositories::AgentRepository;
 use crate::database::AppState;
 use crate::secure_storage::SecureStorage;
@@ -14,10 +14,8 @@ pub struct CreateAgentInput {
     pub alias: String,
     pub description: Option<String>,
     pub avatar: Option<String>,
-    #[serde(rename = "providerType")]
-    pub provider_type: ProviderType,
     pub base_url: Option<String>,
-    /// Only for API agents — stored encrypted, keyed by the new agent id.
+    /// Anthropic-compatible API key — stored encrypted, keyed by the new agent id.
     pub api_key: Option<String>,
     #[serde(default)]
     pub config: Option<AgentConfig>,
@@ -84,7 +82,6 @@ pub async fn create_agent(
         alias: input.alias,
         description: input.description,
         avatar: input.avatar,
-        provider_type: input.provider_type,
         base_url: input.base_url,
         config: input.config.unwrap_or_default(),
         created_at: now,
@@ -92,12 +89,10 @@ pub async fn create_agent(
     };
 
     // Stash the API key (if any) before persisting the row.
-    if matches!(agent.provider_type, ProviderType::Api) {
-        if let Some(key) = input.api_key.filter(|k| !k.is_empty()) {
-            key_storage(&app)?
-                .set(&agent.id, &key)
-                .map_err(|e| e.to_string())?;
-        }
+    if let Some(key) = input.api_key.filter(|k| !k.is_empty()) {
+        key_storage(&app)?
+            .set(&agent.id, &key)
+            .map_err(|e| e.to_string())?;
     }
 
     let repo = AgentRepository::new(state.db_pool.clone());
@@ -117,12 +112,10 @@ pub async fn update_agent(
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {} not found", input.id))?;
 
-    if matches!(existing.provider_type, ProviderType::Api) {
-        if let Some(key) = input.api_key.filter(|k| !k.is_empty()) {
-            key_storage(&app)?
-                .set(&existing.id, &key)
-                .map_err(|e| e.to_string())?;
-        }
+    if let Some(key) = input.api_key.filter(|k| !k.is_empty()) {
+        key_storage(&app)?
+            .set(&existing.id, &key)
+            .map_err(|e| e.to_string())?;
     }
 
     let now = chrono::Utc::now().timestamp_millis();
@@ -131,7 +124,6 @@ pub async fn update_agent(
         alias: input.alias,
         description: input.description,
         avatar: input.avatar,
-        provider_type: existing.provider_type,
         base_url: input.base_url,
         config: input.config.unwrap_or(existing.config),
         created_at: existing.created_at,
@@ -161,9 +153,8 @@ pub async fn delete_agent(
     Ok(())
 }
 
-/// Clone an agent into a new one — config, auth type and base URL are copied,
-/// along with the encrypted API key and the isolated login profile, so the copy
-/// works out of the box.
+/// Clone an agent into a new one — config and base URL are copied, along with the
+/// encrypted API key, so the copy works out of the box.
 #[tauri::command]
 pub async fn duplicate_agent(
     id: String,
@@ -184,15 +175,14 @@ pub async fn duplicate_agent(
         alias: format!("{} copy", src.alias),
         description: src.description.clone(),
         avatar: src.avatar.clone(),
-        provider_type: src.provider_type,
         base_url: src.base_url.clone(),
         config: src.config.clone(),
         created_at: now,
         updated_at: now,
     };
 
-    // Carry over the API key (API agents) and the login profile dir (subscription
-    // agents) so the clone is immediately usable.
+    // Carry over the encrypted API key and any isolated CLI state so the clone is
+    // immediately usable.
     if let Ok(storage) = key_storage(&app) {
         if let Ok(Some(k)) = storage.get(&src.id) {
             let _ = storage.set(&new_id, &k);

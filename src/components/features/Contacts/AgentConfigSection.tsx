@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ChevronRight, Info, Plus, X } from 'lucide-react'
-import { MacOSButton, MacOSSwitch } from '@/components/ui'
+import { Button, Switch } from '@/components/ui'
 import { useUpdateAgent } from '@/hooks/agents'
 import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
@@ -132,9 +132,9 @@ export function AgentConfigSection({ agent }: Props) {
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Claude Code 配置
         </label>
-        <MacOSButton onClick={handleSave} disabled={!canSave}>
+        <Button onClick={handleSave} disabled={!canSave}>
           {updateAgent.isPending ? '保存中…' : dirty ? '保存配置' : '已保存'}
-        </MacOSButton>
+        </Button>
       </div>
 
       {/* ---------- Basic ---------- */}
@@ -211,7 +211,7 @@ export function AgentConfigSection({ agent }: Props) {
                   <div className="text-xs text-foreground">{t.label}</div>
                   <div className="text-[11px] text-muted-foreground truncate">{t.hint}</div>
                 </div>
-                <MacOSSwitch
+                <Switch
                   checked={isToolOn(t.name)}
                   onCheckedChange={(v) => toggleTool(t.name, v)}
                 />

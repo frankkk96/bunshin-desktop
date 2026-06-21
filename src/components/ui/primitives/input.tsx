@@ -1,11 +1,11 @@
 import { forwardRef } from 'react'
 import { cn } from '@/lib/ui/utils'
 
-interface MacOSInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: boolean
 }
 
-export const MacOSInput = forwardRef<HTMLInputElement, MacOSInputProps>(
+export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, error, ...props }, ref) => {
     return (
       <input
@@ -25,4 +25,4 @@ export const MacOSInput = forwardRef<HTMLInputElement, MacOSInputProps>(
   },
 )
 
-MacOSInput.displayName = 'MacOSInput'
+Input.displayName = 'Input'

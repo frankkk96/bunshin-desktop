@@ -13,11 +13,11 @@ import {
 } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import {
-  MacOSSwitch,
-  MacOSInput,
-  MacOSButton,
-  MacOSAlert,
-  MacOSAlertDescription,
+  Switch,
+  Input,
+  Button,
+  Alert,
+  AlertDescription,
 } from '@/components/ui'
 import { Theme, useAppSettingsQuery } from '@/hooks/settings/query'
 import { useSettingsMutations, useSettingsChangeListener } from '@/hooks/settings/mutations'
@@ -156,17 +156,17 @@ export function GeneralSection() {
     <div className="space-y-6">
       {/* Status Messages */}
       {(settingsError || dataManagementError) && (
-        <MacOSAlert variant="destructive">
-          <MacOSAlertDescription>
+        <Alert variant="destructive">
+          <AlertDescription>
             {settingsError ? String(settingsError) : dataManagementError}
-          </MacOSAlertDescription>
-        </MacOSAlert>
+          </AlertDescription>
+        </Alert>
       )}
 
       {dataManagementSuccess && (
-        <MacOSAlert>
-          <MacOSAlertDescription>{dataManagementSuccess}</MacOSAlertDescription>
-        </MacOSAlert>
+        <Alert>
+          <AlertDescription>{dataManagementSuccess}</AlertDescription>
+        </Alert>
       )}
 
       {/* Application */}
@@ -208,7 +208,7 @@ export function GeneralSection() {
       {/* System */}
       <SettingSection title="System">
         <SettingRow icon={<RefreshCw className="w-4 h-4" />} title="Auto Update">
-          <MacOSSwitch
+          <Switch
             checked={autoUpdate}
             onCheckedChange={(checked: boolean) => {
               updateSettings.mutate({ autoUpdate: checked })
@@ -217,7 +217,7 @@ export function GeneralSection() {
         </SettingRow>
         <SettingDivider />
         <SettingRow icon={<Bug className="w-4 h-4" />} title="Crash Reports">
-          <MacOSSwitch
+          <Switch
             checked={crashReports}
             onCheckedChange={(checked: boolean) => {
               updateSettings.mutate({ crashReports: checked })
@@ -234,14 +234,14 @@ export function GeneralSection() {
           description="HTTP/HTTPS proxy server URL"
         >
           <div className="flex items-center gap-2">
-            <MacOSInput
+            <Input
               type="text"
               value={proxyUrl}
               onChange={(e) => handleProxyUrlUpdate(e.target.value)}
               placeholder="http://127.0.0.1:7890"
               className="flex-1"
             />
-            <MacOSButton
+            <Button
               onClick={handleTestProxy}
               disabled={testStatus === 'testing' || !proxyUrl.trim()}
               variant="outline"
@@ -253,7 +253,7 @@ export function GeneralSection() {
               )}
             >
               {getTestButtonContent()}
-            </MacOSButton>
+            </Button>
           </div>
         </SettingRow>
       </SettingSection>
@@ -265,7 +265,7 @@ export function GeneralSection() {
           title="Export Data"
           description="Export all application data excluding encrypted API keys"
         >
-          <MacOSButton
+          <Button
             onClick={handleExportData}
             disabled={isExporting}
             variant="outline"
@@ -281,7 +281,7 @@ export function GeneralSection() {
                 Export
               </>
             )}
-          </MacOSButton>
+          </Button>
         </SettingRow>
       </SettingSection>
 
@@ -292,9 +292,9 @@ export function GeneralSection() {
           title="Submit Feedback"
           description="Open the GitHub issue tracker"
         >
-          <MacOSButton onClick={handleFeedbackClick} variant="outline">
+          <Button onClick={handleFeedbackClick} variant="outline">
             Open
-          </MacOSButton>
+          </Button>
         </SettingRow>
 
         {import.meta.env.DEV && (
@@ -305,7 +305,7 @@ export function GeneralSection() {
               title="Test Crash & Logs"
               description="Triggers a test crash report (dev only)"
             >
-              <MacOSButton
+              <Button
                 onClick={handleTestCrashClick}
                 disabled={isTestingCrash}
                 variant="outline"
@@ -321,7 +321,7 @@ export function GeneralSection() {
                     Trigger
                   </>
                 )}
-              </MacOSButton>
+              </Button>
             </SettingRow>
           </>
         )}

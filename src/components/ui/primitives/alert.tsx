@@ -17,7 +17,7 @@ const alertVariants = cva(
   }
 )
 
-export const MacOSAlert = React.forwardRef<
+export const Alert = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
 >(({ className, variant, ...props }, ref) => (
@@ -29,9 +29,9 @@ export const MacOSAlert = React.forwardRef<
   />
 ))
 
-MacOSAlert.displayName = 'MacOSAlert'
+Alert.displayName = 'Alert'
 
-export const MacOSAlertDescription = React.forwardRef<
+export const AlertDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
@@ -42,4 +42,4 @@ export const MacOSAlertDescription = React.forwardRef<
   />
 ))
 
-MacOSAlertDescription.displayName = 'MacOSAlertDescription'
+AlertDescription.displayName = 'AlertDescription'

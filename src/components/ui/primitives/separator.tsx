@@ -1,12 +1,12 @@
 import { forwardRef } from 'react'
 import { cn } from '@/lib/ui/utils'
 
-interface MacOSSeparatorProps extends React.HTMLAttributes<HTMLDivElement> {
+interface SeparatorProps extends React.HTMLAttributes<HTMLDivElement> {
   orientation?: 'horizontal' | 'vertical'
   decorative?: boolean
 }
 
-export const MacOSSeparator = forwardRef<HTMLDivElement, MacOSSeparatorProps>(
+export const Separator = forwardRef<HTMLDivElement, SeparatorProps>(
   ({ className, orientation = 'horizontal', decorative = true, ...props }, ref) => {
     return (
       <div
@@ -24,4 +24,4 @@ export const MacOSSeparator = forwardRef<HTMLDivElement, MacOSSeparatorProps>(
   },
 )
 
-MacOSSeparator.displayName = 'MacOSSeparator'
+Separator.displayName = 'Separator'

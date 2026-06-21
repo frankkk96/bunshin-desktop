@@ -3,7 +3,7 @@ use crate::error::{AppError, AppResult};
 use sqlx::SqlitePool;
 
 const SELECT_COLS: &str =
-    "id, alias, description, avatar, provider_type, base_url, config, created_at, updated_at";
+    "id, alias, description, avatar, base_url, config, created_at, updated_at";
 
 pub struct AgentRepository {
     pool: SqlitePool,
@@ -35,15 +35,14 @@ impl AgentRepository {
         sqlx::query(
             r#"
             INSERT INTO agents
-                (id, alias, description, avatar, provider_type, base_url, config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, alias, description, avatar, base_url, config, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(&agent.id)
         .bind(&agent.alias)
         .bind(agent.description.as_deref())
         .bind(agent.avatar.as_deref())
-        .bind(agent.provider_type.as_str())
         .bind(agent.base_url.as_deref())
         .bind(agent.config.to_json())
         .bind(agent.created_at)
@@ -53,18 +52,7 @@ impl AgentRepository {
         Ok(agent)
     }
 
-    /// Update an agent. `provider_type` is immutable: callers pass the original
-    /// value; a mismatch is rejected.
     pub async fn update(&self, agent: Agent) -> AppResult<Agent> {
-        let existing = self
-            .get(&agent.id)
-            .await?
-            .ok_or_else(|| AppError::NotFound(format!("agent {}", agent.id)))?;
-        if existing.provider_type != agent.provider_type {
-            return Err(AppError::InvalidInput(
-                "agent type cannot be changed after creation".to_string(),
-            ));
-        }
         sqlx::query(
             r#"
             UPDATE agents

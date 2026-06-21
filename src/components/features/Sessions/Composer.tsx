@@ -4,9 +4,9 @@ import { X } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
 import { IconButton } from '@/components/common'
 import {
-  MacOSTooltip,
-  MacOSTooltipContent,
-  MacOSTooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@/components/ui'
 import { cn } from '@/lib/ui/utils'
 
@@ -129,37 +129,37 @@ export function Composer({
           />
 
           <div className="absolute bottom-2 left-2 flex gap-0.5">
-            <MacOSTooltip>
-              <MacOSTooltipTrigger asChild>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <div>
                   <IconButton onClick={handleAttach} disabled={disabled}>
                     <IoImageOutline size={20} className="text-muted-foreground" />
                   </IconButton>
                 </div>
-              </MacOSTooltipTrigger>
-              <MacOSTooltipContent side="top" sideOffset={8}>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={8}>
                 Attach image / PDF
-              </MacOSTooltipContent>
-            </MacOSTooltip>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <div className="absolute bottom-1 right-1 flex gap-1">
             {canCancel && (
-              <MacOSTooltip>
-                <MacOSTooltipTrigger asChild>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <div>
                     <IconButton onClick={onCancel}>
                       <IoStopCircleOutline size={32} className="text-foreground" />
                     </IconButton>
                   </div>
-                </MacOSTooltipTrigger>
-                <MacOSTooltipContent side="top" sideOffset={8}>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
                   Stop generating
-                </MacOSTooltipContent>
-              </MacOSTooltip>
+                </TooltipContent>
+              </Tooltip>
             )}
-            <MacOSTooltip>
-              <MacOSTooltipTrigger asChild>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <div>
                   <IconButton onClick={handleSend} disabled={!ready}>
                     <IoArrowUpCircle
@@ -168,11 +168,11 @@ export function Composer({
                     />
                   </IconButton>
                 </div>
-              </MacOSTooltipTrigger>
-              <MacOSTooltipContent side="top" sideOffset={8}>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={8}>
                 Send (Enter)
-              </MacOSTooltipContent>
-            </MacOSTooltip>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>

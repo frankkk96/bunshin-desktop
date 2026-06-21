@@ -103,8 +103,6 @@ impl DatabaseConnection {
                 alias TEXT NOT NULL,
                 description TEXT,
                 avatar TEXT,
-                provider_type TEXT NOT NULL DEFAULT 'subscription'
-                    CHECK (provider_type IN ('subscription','api')),
                 base_url TEXT,
                 config TEXT NOT NULL DEFAULT '{}',
                 created_at INTEGER NOT NULL,

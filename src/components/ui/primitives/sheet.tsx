@@ -2,7 +2,7 @@ import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/ui/utils'
 
-interface MacOSSheetProps {
+interface SheetProps {
   isOpen: boolean
   onClose: () => void
   children: React.ReactNode
@@ -12,7 +12,7 @@ interface MacOSSheetProps {
   placement?: 'center' | 'top-left' | 'top-right'
 }
 
-export function MacOSSheet({
+export function Sheet({
   isOpen,
   onClose,
   children,
@@ -20,7 +20,7 @@ export function MacOSSheet({
   maxWidth = '500px',
   height = '500px',
   placement = 'center',
-}: MacOSSheetProps) {
+}: SheetProps) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -92,13 +92,13 @@ export function MacOSSheet({
   )
 }
 
-interface MacOSSheetHeaderProps {
+interface SheetHeaderProps {
   children: React.ReactNode
   className?: string
   compact?: boolean
 }
 
-export function MacOSSheetHeader({ children, className, compact = false }: MacOSSheetHeaderProps) {
+export function SheetHeader({ children, className, compact = false }: SheetHeaderProps) {
   return (
     <div
       className={cn(
@@ -112,13 +112,13 @@ export function MacOSSheetHeader({ children, className, compact = false }: MacOS
   )
 }
 
-interface MacOSSheetTitleProps {
+interface SheetTitleProps {
   children: React.ReactNode
   className?: string
   size?: 'sm' | 'md' | 'lg'
 }
 
-export function MacOSSheetTitle({ children, className, size = 'md' }: MacOSSheetTitleProps) {
+export function SheetTitle({ children, className, size = 'md' }: SheetTitleProps) {
   const sizeClasses = {
     sm: 'text-sm font-semibold',
     md: 'text-base font-semibold',
@@ -128,20 +128,20 @@ export function MacOSSheetTitle({ children, className, size = 'md' }: MacOSSheet
   return <h2 className={cn(sizeClasses[size], 'text-foreground', className)}>{children}</h2>
 }
 
-interface MacOSSheetDescriptionProps {
+interface SheetDescriptionProps {
   children: React.ReactNode
   className?: string
 }
 
-export function MacOSSheetDescription({ children, className }: MacOSSheetDescriptionProps) {
+export function SheetDescription({ children, className }: SheetDescriptionProps) {
   return <p className={cn('text-xs text-muted-foreground mt-1', className)}>{children}</p>
 }
 
-interface MacOSSheetContentProps {
+interface SheetContentProps {
   children: React.ReactNode
   className?: string
 }
 
-export function MacOSSheetContent({ children, className }: MacOSSheetContentProps) {
+export function SheetContent({ children, className }: SheetContentProps) {
   return <div className={cn('flex-1 overflow-auto bg-popover', className)}>{children}</div>
 }

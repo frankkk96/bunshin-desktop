@@ -1,9 +1,9 @@
 import { forwardRef } from 'react'
 import { cn } from '@/lib/ui/utils'
 
-interface MacOSLabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
+interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
 
-export const MacOSLabel = forwardRef<HTMLLabelElement, MacOSLabelProps>(
+export const Label = forwardRef<HTMLLabelElement, LabelProps>(
   ({ className, ...props }, ref) => {
     return (
       <label
@@ -19,4 +19,4 @@ export const MacOSLabel = forwardRef<HTMLLabelElement, MacOSLabelProps>(
   },
 )
 
-MacOSLabel.displayName = 'MacOSLabel'
+Label.displayName = 'Label'

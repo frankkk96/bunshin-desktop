@@ -2,10 +2,10 @@ import React from 'react'
 import { IoSearchOutline } from 'react-icons/io5'
 import { cn } from '@/lib/ui/utils'
 import {
-  MacOSButton,
-  MacOSTooltip,
-  MacOSTooltipContent,
-  MacOSTooltipTrigger,
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@/components/ui'
 
 interface ActionButton {
@@ -94,39 +94,39 @@ export function SidebarContainer({
           {/* Action buttons */}
           <div className="flex items-center gap-1">
             {actionButton && (
-              <MacOSTooltip>
-                <MacOSTooltipTrigger asChild>
-                  <MacOSButton
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
                     data-tauri-drag-region
                     onClick={actionButton.onClick}
                     variant="icon"
                     className="p-1.5 rounded-md"
                   >
                     <actionButton.icon size={16} />
-                  </MacOSButton>
-                </MacOSTooltipTrigger>
-                <MacOSTooltipContent side="top" sideOffset={5}>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={5}>
                   {actionButton.tooltip}
-                </MacOSTooltipContent>
-              </MacOSTooltip>
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {headerIcon && (
-              <MacOSTooltip>
-                <MacOSTooltipTrigger asChild>
-                  <MacOSButton
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
                     data-tauri-drag-region
                     onClick={onHeaderIconClick || (() => {})}
                     variant="icon"
                     className="p-1.5 rounded-md"
                   >
                     {headerIcon}
-                  </MacOSButton>
-                </MacOSTooltipTrigger>
-                <MacOSTooltipContent side="top" sideOffset={5}>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={5}>
                   {headerIconTooltip}
-                </MacOSTooltipContent>
-              </MacOSTooltip>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -148,20 +148,20 @@ export function SidebarContainer({
               />
             </div>
             {inlineAction && (
-              <MacOSTooltip>
-                <MacOSTooltipTrigger asChild>
-                  <MacOSButton
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
                     onClick={inlineAction.onClick}
                     variant="outline"
                     className="h-8 w-8 p-0 flex-shrink-0"
                   >
                     <inlineAction.icon size={16} />
-                  </MacOSButton>
-                </MacOSTooltipTrigger>
-                <MacOSTooltipContent side="bottom" sideOffset={5}>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={5}>
                   {inlineAction.tooltip}
-                </MacOSTooltipContent>
-              </MacOSTooltip>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         )}

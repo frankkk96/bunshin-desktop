@@ -57,9 +57,3 @@ export function useHasAgentApiKey(agentId: string | undefined) {
     enabled: !!agentId,
   })
 }
-
-export function useSignInAgent() {
-  return useMutation({
-    mutationFn: (agentId: string) => agentsApi.signIn(agentId),
-  })
-}

@@ -4,7 +4,7 @@ import { IoAddOutline, IoChatbubblesOutline, IoSettingsOutline } from 'react-ico
 import { Download } from 'lucide-react'
 import { getVersion } from '@tauri-apps/api/app'
 import { SidebarContainer } from '@/components/common'
-import { MacOSButton } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { openSettingsWindow } from '@/components/features/Settings/SettingsWindow'
 import { useUpdater } from '@/components/features/Updater/useUpdater'
 import { UpdateDialog } from '@/components/features/Updater/UpdateDialog'
@@ -168,10 +168,10 @@ function SessionsEmptyState({
           ? 'Start a Claude Code session in a project folder to begin chatting with an agent.'
           : 'Pick a session on the left, or create a new one.'}
       </p>
-      <MacOSButton onClick={onCreate} className="flex items-center gap-1.5 px-5">
+      <Button onClick={onCreate} className="flex items-center gap-1.5 px-5">
         <IoAddOutline size={16} />
         Create Session
-      </MacOSButton>
+      </Button>
     </div>
   )
 }

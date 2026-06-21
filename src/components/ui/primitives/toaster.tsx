@@ -1,9 +1,7 @@
 import { useTheme } from 'next-themes'
 import { Toaster as Sonner, ToasterProps } from 'sonner'
 
-interface MacOSToasterProps extends ToasterProps {}
-
-export function MacOSToaster({ ...props }: MacOSToasterProps) {
+export function Toaster({ ...props }: ToasterProps) {
   const { theme = 'system' } = useTheme()
 
   return (

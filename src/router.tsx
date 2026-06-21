@@ -1,14 +1,14 @@
 import { createBrowserRouter, Navigate, RouteObject, Outlet } from 'react-router-dom'
 import { SessionsView } from '@/components/features/Sessions'
 import { SettingsWindowPage } from '@/components/features/Settings/SettingsWindowPage'
-import { MacOSToaster } from '@/components/ui'
+import { Toaster } from '@/components/ui'
 import { MainLayout } from './components/layout/MainLayout'
 
 function RootLayout() {
   return (
     <>
       <Outlet />
-      <MacOSToaster position="top-center" />
+      <Toaster position="top-center" />
     </>
   )
 }

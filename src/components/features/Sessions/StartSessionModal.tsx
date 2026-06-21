@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  MacOSButton,
-  MacOSInput,
-  MacOSLabel,
-  MacOSSelect,
-  MacOSSelectContent,
-  MacOSSelectItem,
-  MacOSSelectTrigger,
-  MacOSSelectValue,
-  MacOSSheet,
-  MacOSSheetContent,
-  MacOSSheetDescription,
-  MacOSSheetHeader,
-  MacOSSheetTitle,
+  Button,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui'
 import { useAgents } from '@/hooks/agents'
 import { useStartSession } from '@/hooks/sessions'
@@ -105,49 +105,49 @@ export function StartSessionModal({
   }
 
   return (
-    <MacOSSheet isOpen onClose={onClose} maxWidth="520px" height="auto">
-      <MacOSSheetHeader>
-        <MacOSSheetTitle>Create Session</MacOSSheetTitle>
-        <MacOSSheetDescription>
+    <Sheet isOpen onClose={onClose} maxWidth="520px" height="auto">
+      <SheetHeader>
+        <SheetTitle>Create Session</SheetTitle>
+        <SheetDescription>
           Spawns a Claude Code subprocess in the chosen working directory.
-        </MacOSSheetDescription>
-      </MacOSSheetHeader>
-      <MacOSSheetContent className="px-6 py-5">
+        </SheetDescription>
+      </SheetHeader>
+      <SheetContent className="px-6 py-5">
         <div className="space-y-4">
           <Field label="Agent">
             {agents.length === 0 ? (
               <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-border px-3 py-2.5">
                 <span className="text-sm text-muted-foreground">No agents yet.</span>
-                <MacOSButton variant="outline" onClick={() => openSettingsWindow('agents')}>
+                <Button variant="outline" onClick={() => openSettingsWindow('agents')}>
                   Set up in Settings
-                </MacOSButton>
+                </Button>
               </div>
             ) : (
-              <MacOSSelect value={agentId} onValueChange={(v) => setAgentId(v)}>
-                <MacOSSelectTrigger>
-                  <MacOSSelectValue placeholder="Pick an agent" />
-                </MacOSSelectTrigger>
-                <MacOSSelectContent>
+              <Select value={agentId} onValueChange={(v) => setAgentId(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pick an agent" />
+                </SelectTrigger>
+                <SelectContent>
                   {agents.map((a) => (
-                    <MacOSSelectItem key={a.id} value={a.id}>
+                    <SelectItem key={a.id} value={a.id}>
                       {a.alias}
-                    </MacOSSelectItem>
+                    </SelectItem>
                   ))}
-                </MacOSSelectContent>
-              </MacOSSelect>
+                </SelectContent>
+              </Select>
             )}
           </Field>
 
           <Field label="Working directory">
             <div className="flex gap-2">
-              <MacOSInput
+              <Input
                 value={cwd}
                 onChange={(e) => setCwd(e.target.value)}
                 placeholder="/path/to/project"
               />
-              <MacOSButton variant="outline" onClick={handlePickDir}>
+              <Button variant="outline" onClick={handlePickDir}>
                 Browse…
-              </MacOSButton>
+              </Button>
             </div>
           </Field>
 
@@ -155,25 +155,25 @@ export function StartSessionModal({
             label="Permission mode"
             hint={PERMISSION_MODES.find((m) => m.value === permissionMode)?.hint}
           >
-            <MacOSSelect
+            <Select
               value={permissionMode}
               onValueChange={(v) => setPermissionMode(v as PermissionMode)}
             >
-              <MacOSSelectTrigger>
-                <MacOSSelectValue />
-              </MacOSSelectTrigger>
-              <MacOSSelectContent>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
                 {PERMISSION_MODES.map((m) => (
-                  <MacOSSelectItem key={m.value} value={m.value}>
+                  <SelectItem key={m.value} value={m.value}>
                     {m.label}
-                  </MacOSSelectItem>
+                  </SelectItem>
                 ))}
-              </MacOSSelectContent>
-            </MacOSSelect>
+              </SelectContent>
+            </Select>
           </Field>
 
           <Field label="Display name (optional)">
-            <MacOSInput
+            <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. refactor-foo"
@@ -182,15 +182,15 @@ export function StartSessionModal({
         </div>
 
         <div className="flex justify-end gap-2 mt-6">
-          <MacOSButton variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </MacOSButton>
-          <MacOSButton onClick={handleStart} disabled={startSession.isPending}>
+          </Button>
+          <Button onClick={handleStart} disabled={startSession.isPending}>
             {startSession.isPending ? 'Creating…' : 'Create session'}
-          </MacOSButton>
+          </Button>
         </div>
-      </MacOSSheetContent>
-    </MacOSSheet>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -205,7 +205,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <MacOSLabel>{label}</MacOSLabel>
+      <Label>{label}</Label>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>

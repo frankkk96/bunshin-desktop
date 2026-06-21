@@ -1,12 +1,12 @@
 import { forwardRef } from 'react'
 import { cn } from '@/lib/ui/utils'
 
-interface MacOSButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'icon'
   size?: 'sm' | 'md' | 'lg'
 }
 
-export const MacOSButton = forwardRef<HTMLButtonElement, MacOSButtonProps>(
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'default', size = 'md', children, disabled, ...props }, ref) => {
     const baseStyles =
       'inline-flex items-center justify-center rounded-md font-medium outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
@@ -50,4 +50,4 @@ export const MacOSButton = forwardRef<HTMLButtonElement, MacOSButtonProps>(
   },
 )
 
-MacOSButton.displayName = 'MacOSButton'
+Button.displayName = 'Button'

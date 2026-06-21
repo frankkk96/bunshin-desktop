@@ -562,7 +562,6 @@ pub fn run() {
             duplicate_agent,
             set_agent_api_key,
             has_agent_api_key,
-            sign_in_agent,
             // Sessions (read + lifecycle)
             list_sessions,
             delete_session,

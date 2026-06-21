@@ -2,7 +2,7 @@ use crate::claude_agent::protocol::{
     build_control_success, build_initialize, build_interrupt, build_user_message,
     ClaudeStreamEvent,
 };
-use crate::database::models::{Agent, AgentConfig, ProviderType, Session};
+use crate::database::models::{Agent, AgentConfig, Session};
 use crate::database::repositories::MessageRepository;
 use anyhow::{anyhow, Context, Result};
 use serde::Serialize;
@@ -211,25 +211,15 @@ impl ClaudeProcess {
 
         cmd.current_dir(&session.cwd);
 
-        match agent.provider_type {
-            ProviderType::Subscription => {
-                // OAuth lives in `profile_dir/.credentials.json`; user must run
-                // sign-in once per agent (Settings → Agents → Sign in).
-            }
-            ProviderType::Api => {
-                if let Some(base_url) = agent.base_url.as_deref() {
-                    cmd.env("ANTHROPIC_BASE_URL", base_url);
-                }
-                if let Some(key) = cfg.api_key {
-                    cmd.env("ANTHROPIC_API_KEY", key);
-                }
-            }
+        // API auth: optional custom endpoint + the agent's key.
+        if let Some(base_url) = agent.base_url.as_deref() {
+            cmd.env("ANTHROPIC_BASE_URL", base_url);
+        }
+        if let Some(key) = cfg.api_key {
+            cmd.env("ANTHROPIC_API_KEY", key);
         }
 
         cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
-
-        let agent_id_for_exit = agent.id.clone();
-        let provider_type_for_exit = agent.provider_type;
 
         #[cfg(target_os = "windows")]
         {
@@ -443,14 +433,6 @@ impl ClaudeProcess {
             *status_wait.write().await = new_status;
 
             let stderr_tail = stderr_for_wait.lock().await.clone();
-            // Detect "claude needs you to sign in" so the UI can offer a one-click
-            // sign-in button instead of just dumping stderr to the chat.
-            // Subscription providers print "Please run /login" / "Not logged in"
-            // when their OAuth tokens are missing or expired.
-            let needs_login = matches!(provider_type_for_exit, ProviderType::Subscription)
-                && (stderr_tail.contains("Please run /login")
-                    || stderr_tail.contains("Not logged in")
-                    || stderr_tail.contains("Invalid API key"));
             let payload = serde_json::json!({
                 "type": "process_exit",
                 "code": code_opt,
@@ -461,8 +443,6 @@ impl ClaudeProcess {
                     ProcessStatus::Running => "running",
                 },
                 "stderr_tail": stderr_tail,
-                "needs_login": needs_login,
-                "agent_id": agent_id_for_exit,
             });
             let repo = MessageRepository::new(pool_wait);
             if let Ok(message) = repo

@@ -3,24 +3,24 @@ import * as SelectPrimitive from '@radix-ui/react-select'
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import { cn } from '@/lib/ui/utils'
 
-function MacOSSelect({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
+function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root {...props} />
 }
 
-function MacOSSelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.Value>) {
+function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value {...props} />
 }
 
-interface MacOSSelectTriggerProps extends React.ComponentProps<typeof SelectPrimitive.Trigger> {
+interface SelectTriggerProps extends React.ComponentProps<typeof SelectPrimitive.Trigger> {
   size?: 'sm' | 'default'
 }
 
-function MacOSSelectTrigger({
+function SelectTrigger({
   className,
   size = 'default',
   children,
   ...props
-}: MacOSSelectTriggerProps) {
+}: SelectTriggerProps) {
   return (
     <SelectPrimitive.Trigger
       className={cn(
@@ -42,18 +42,18 @@ function MacOSSelectTrigger({
   )
 }
 
-MacOSSelectTrigger.displayName = 'MacOSSelectTrigger'
+SelectTrigger.displayName = 'SelectTrigger'
 
-interface MacOSSelectContentProps extends React.ComponentProps<typeof SelectPrimitive.Content> {
+interface SelectContentProps extends React.ComponentProps<typeof SelectPrimitive.Content> {
   position?: 'popper' | 'item-aligned'
 }
 
-function MacOSSelectContent({
+function SelectContent({
   className,
   children,
   position = 'popper',
   ...props
-}: MacOSSelectContentProps) {
+}: SelectContentProps) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -70,7 +70,7 @@ function MacOSSelectContent({
         position={position}
         {...props}
       >
-        <MacOSSelectScrollUpButton />
+        <SelectScrollUpButton />
         <SelectPrimitive.Viewport
           className={cn(
             'p-1',
@@ -80,15 +80,15 @@ function MacOSSelectContent({
         >
           {children}
         </SelectPrimitive.Viewport>
-        <MacOSSelectScrollDownButton />
+        <SelectScrollDownButton />
       </SelectPrimitive.Content>
     </SelectPrimitive.Portal>
   )
 }
 
-MacOSSelectContent.displayName = 'MacOSSelectContent'
+SelectContent.displayName = 'SelectContent'
 
-function MacOSSelectItem({
+function SelectItem({
   className,
   children,
   ...props
@@ -114,9 +114,9 @@ function MacOSSelectItem({
   )
 }
 
-MacOSSelectItem.displayName = 'MacOSSelectItem'
+SelectItem.displayName = 'SelectItem'
 
-function MacOSSelectScrollUpButton({
+function SelectScrollUpButton({
   className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
@@ -130,9 +130,9 @@ function MacOSSelectScrollUpButton({
   )
 }
 
-MacOSSelectScrollUpButton.displayName = 'MacOSSelectScrollUpButton'
+SelectScrollUpButton.displayName = 'SelectScrollUpButton'
 
-function MacOSSelectScrollDownButton({
+function SelectScrollDownButton({
   className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
@@ -146,13 +146,13 @@ function MacOSSelectScrollDownButton({
   )
 }
 
-MacOSSelectScrollDownButton.displayName = 'MacOSSelectScrollDownButton'
+SelectScrollDownButton.displayName = 'SelectScrollDownButton'
 
 // Exports
 export {
-  MacOSSelect,
-  MacOSSelectContent,
-  MacOSSelectItem,
-  MacOSSelectTrigger,
-  MacOSSelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 }

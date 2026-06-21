@@ -1,34 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-/// How an agent authenticates to Claude. Each agent owns its own auth — there is
-/// no shared "provider" entity anymore.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum ProviderType {
-    /// Reuses an isolated `claude` CLI OAuth login (per-agent CLAUDE_CONFIG_DIR).
-    Subscription,
-    /// Claude-compatible HTTP API (Anthropic-compatible endpoint + key).
-    Api,
-}
-
-impl ProviderType {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            ProviderType::Subscription => "subscription",
-            ProviderType::Api => "api",
-        }
-    }
-
-    pub fn parse(s: &str) -> Option<Self> {
-        match s {
-            "subscription" => Some(Self::Subscription),
-            "api" => Some(Self::Api),
-            _ => None,
-        }
-    }
-}
-
 /// A single environment variable injected into the claude subprocess via the
 /// merged settings.json `env` block.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,7 +76,6 @@ pub struct DbAgent {
     pub alias: String,
     pub description: Option<String>,
     pub avatar: Option<String>,
-    pub provider_type: String,
     pub base_url: Option<String>,
     pub config: String,
     pub created_at: i64,
@@ -120,9 +91,7 @@ pub struct Agent {
     pub description: Option<String>,
     #[serde(default)]
     pub avatar: Option<String>,
-    /// Auth type, locked after creation.
-    pub provider_type: ProviderType,
-    /// Custom base URL (API agents only).
+    /// Custom Anthropic-compatible base URL (empty → api.anthropic.com).
     #[serde(default)]
     pub base_url: Option<String>,
     #[serde(default)]
@@ -138,8 +107,6 @@ impl From<DbAgent> for Agent {
             alias: db.alias,
             description: db.description,
             avatar: db.avatar,
-            provider_type: ProviderType::parse(&db.provider_type)
-                .unwrap_or(ProviderType::Subscription),
             base_url: db.base_url,
             config: AgentConfig::from_json(&db.config),
             created_at: db.created_at,

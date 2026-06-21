@@ -1,5 +1,3 @@
-export type ProviderType = 'subscription' | 'api'
-
 export interface EnvVar {
   key: string
   value: string
@@ -42,9 +40,7 @@ export interface Agent {
   alias: string
   description: string | null
   avatar: string | null
-  /** Auth type, locked after creation. */
-  providerType: ProviderType
-  /** Custom base URL (API agents only). */
+  /** Custom Anthropic-compatible base URL (null → api.anthropic.com). */
   baseUrl: string | null
   config: AgentConfig
   createdAt: number

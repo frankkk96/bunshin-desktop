@@ -1,6 +1,6 @@
 import { AlertCircle, CheckCircle2, CircleDashed, Loader2, Plus } from 'lucide-react'
 import { AgentAvatar } from '@/components/common'
-import { MacOSButton } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { useAgents } from '@/hooks/agents'
 import { useRunningSessions } from '@/hooks/sessions'
 import { cn } from '@/lib/ui/utils'
@@ -41,10 +41,10 @@ export function SessionsList({
           No sessions yet. Start one to begin chatting with an agent.
         </p>
         {onCreate && (
-          <MacOSButton onClick={onCreate} className="flex items-center gap-1.5">
+          <Button onClick={onCreate} className="flex items-center gap-1.5">
             <Plus size={14} />
             Create Session
-          </MacOSButton>
+          </Button>
         )}
       </div>
     )

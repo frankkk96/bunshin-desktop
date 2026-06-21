@@ -14,12 +14,12 @@ import {
   Trash2,
 } from 'lucide-react'
 import {
-  MacOSPopover,
-  MacOSPopoverContent,
-  MacOSPopoverTrigger,
-  MacOSTooltip,
-  MacOSTooltipContent,
-  MacOSTooltipTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@/components/ui'
 import { AgentAvatar, IconButton } from '@/components/common'
 import { openSettingsWindow } from '@/components/features/Settings/SettingsWindow'
@@ -39,7 +39,7 @@ import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
 import { formatRelativeTime } from '@/lib/ui/formatters/time'
 import type { Message, Session } from '@/lib/types'
-import { MessageRenderer, SignInButton } from './MessageRenderer'
+import { MessageRenderer } from './MessageRenderer'
 import { Composer } from './Composer'
 import { PermissionProvider, hasPendingPermission } from './PermissionRequestCard'
 
@@ -126,24 +126,6 @@ export function SessionView({ session }: SessionViewProps) {
     [allMessages],
   )
 
-  // If the most recent subprocess exit was a "needs login" exit, surface a
-  // sign-in button in the header so the user doesn't have to dig into Settings
-  // or guess what `Please run /login` means. Cleared when a fresh process
-  // starts (status becomes 'running').
-  const loginPrompt = useMemo(() => {
-    if (status === 'running') return null
-    for (let i = allMessages.length - 1; i >= 0; i--) {
-      const m = allMessages[i]
-      if (m.kind !== 'process_exit') continue
-      if (m.payload?.needs_login && m.payload?.agent_id) {
-        return { agentId: String(m.payload.agent_id) }
-      }
-      // Stop at the latest process_exit even if it isn't a login error —
-      // otherwise we'd surface a stale prompt from earlier in history.
-      return null
-    }
-    return null
-  }, [allMessages, status])
 
   const siblingSessions = useMemo(
     () =>
@@ -229,12 +211,7 @@ export function SessionView({ session }: SessionViewProps) {
               >
                 {session.name || agent?.alias || 'Session'}
               </span>
-              <StatusIcon
-                status={status}
-                busy={turnBusy}
-                needsLogin={!!loginPrompt}
-              />
-              {loginPrompt && <SignInButton agentId={loginPrompt.agentId} />}
+              <StatusIcon status={status} busy={turnBusy} />
             </div>
             <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1 max-w-[420px]">
               <span className="font-mono">{session.cwd}</span>
@@ -247,20 +224,20 @@ export function SessionView({ session }: SessionViewProps) {
           <span className="text-[11px] text-muted-foreground/70 hidden sm:inline">
             {formatRelativeTime(session.visitedAt || session.updatedAt)}
           </span>
-          <MacOSPopover open={menuOpen} onOpenChange={setMenuOpen}>
-            <MacOSTooltip>
-              <MacOSTooltipTrigger asChild>
+          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <div>
-                  <MacOSPopoverTrigger asChild>
+                  <PopoverTrigger asChild>
                     <IconButton>
                       <MoreHorizontal size={18} className="text-foreground" />
                     </IconButton>
-                  </MacOSPopoverTrigger>
+                  </PopoverTrigger>
                 </div>
-              </MacOSTooltipTrigger>
-              <MacOSTooltipContent side="bottom">Session menu</MacOSTooltipContent>
-            </MacOSTooltip>
-            <MacOSPopoverContent align="end" sideOffset={6} className="w-64 p-1">
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Session menu</TooltipContent>
+            </Tooltip>
+            <PopoverContent align="end" sideOffset={6} className="w-64 p-1">
               {menuView === 'main' ? (
                 <div>
                   <MenuItem
@@ -303,8 +280,8 @@ export function SessionView({ session }: SessionViewProps) {
                   }}
                 />
               )}
-            </MacOSPopoverContent>
-          </MacOSPopover>
+            </PopoverContent>
+          </Popover>
         </div>
       </header>
 
@@ -454,19 +431,10 @@ function SessionHistoryList({
 function StatusIcon({
   status,
   busy,
-  needsLogin,
 }: {
   status?: 'running' | 'stopped' | 'crashed'
   busy: boolean
-  needsLogin?: boolean
 }) {
-  if (needsLogin) {
-    return (
-      <Tip text="Provider not signed in">
-        <AlertCircle size={14} className="text-amber-500" />
-      </Tip>
-    )
-  }
   if (status === 'crashed') {
     return (
       <Tip text="Subprocess crashed">
@@ -504,11 +472,11 @@ function StatusIcon({
 
 function Tip({ text, children }: { text: string; children: React.ReactNode }) {
   return (
-    <MacOSTooltip>
-      <MacOSTooltipTrigger asChild>
+    <Tooltip>
+      <TooltipTrigger asChild>
         <span className="inline-flex items-center">{children}</span>
-      </MacOSTooltipTrigger>
-      <MacOSTooltipContent side="bottom">{text}</MacOSTooltipContent>
-    </MacOSTooltip>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{text}</TooltipContent>
+    </Tooltip>
   )
 }

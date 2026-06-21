@@ -1,6 +1,5 @@
 use crate::claude_agent::manager::{ClaudeSessionManager, RunningSessionInfo};
-use crate::claude_agent::process::agent_profile_dir;
-use crate::database::models::{PermissionMode, ProviderType, Session};
+use crate::database::models::{PermissionMode, Session};
 use crate::database::repositories::{AgentRepository, MessageRepository, SessionRepository};
 use crate::database::AppState;
 use crate::secure_storage::SecureStorage;
@@ -71,18 +70,14 @@ pub async fn start_session(
         return Err(format!("DUPLICATE_SESSION:{}", existing.id));
     }
 
-    let api_key = if matches!(agent.provider_type, ProviderType::Api) {
-        match load_agent_api_key(&app, &agent.id)? {
-            Some(k) if !k.is_empty() => Some(k),
-            _ => {
-                return Err(format!(
-                    "no API key set for agent '{}' — add one in Settings → Agents",
-                    agent.alias
-                ))
-            }
+    let api_key = match load_agent_api_key(&app, &agent.id)? {
+        Some(k) if !k.is_empty() => Some(k),
+        _ => {
+            return Err(format!(
+                "no API key set for agent '{}' — add one in Settings → Agents",
+                agent.alias
+            ))
         }
-    } else {
-        None
     };
 
     let now = chrono::Utc::now().timestamp_millis();
@@ -159,11 +154,7 @@ pub async fn resume_session(
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {} not found", session.agent_id))?;
 
-    let api_key = if matches!(agent.provider_type, ProviderType::Api) {
-        load_agent_api_key(&app, &agent.id)?
-    } else {
-        None
-    };
+    let api_key = load_agent_api_key(&app, &agent.id)?;
 
     manager
         .start(
@@ -288,11 +279,7 @@ pub async fn clear_session(
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {} not found", session.agent_id))?;
-    let api_key = if matches!(agent.provider_type, ProviderType::Api) {
-        load_agent_api_key(&app, &agent.id)?
-    } else {
-        None
-    };
+    let api_key = load_agent_api_key(&app, &agent.id)?;
     manager
         .start(
             &session,
@@ -334,88 +321,3 @@ pub async fn has_agent_api_key(agent_id: String, app: AppHandle) -> Result<bool,
     Ok(load_agent_api_key(&app, &agent_id)?.is_some())
 }
 
-/// Open a terminal window running `claude /login` against the agent's isolated
-/// `CLAUDE_CONFIG_DIR`. Subscription agents need this once so OAuth tokens land
-/// in the right profile dir.
-#[tauri::command]
-pub async fn sign_in_agent(
-    agent_id: String,
-    state: State<'_, AppState>,
-    app: AppHandle,
-) -> Result<(), String> {
-    let agent = AgentRepository::new(state.db_pool.clone())
-        .get(&agent_id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("agent {} not found", agent_id))?;
-
-    if !matches!(agent.provider_type, ProviderType::Subscription) {
-        return Err("Sign-in only applies to subscription agents".into());
-    }
-
-    let profile_dir = agent_profile_dir(&app, &agent.id).map_err(|e| e.to_string())?;
-    open_login_terminal(&profile_dir).map_err(|e| e.to_string())
-}
-
-#[cfg(target_os = "macos")]
-fn open_login_terminal(profile_dir: &Path) -> Result<(), String> {
-    // Escape both backslashes and double quotes for the AppleScript string.
-    let dir_quoted = profile_dir
-        .display()
-        .to_string()
-        .replace('\\', "\\\\")
-        .replace('"', "\\\"");
-    let script = format!(
-        "tell application \"Terminal\" to do script \"export CLAUDE_CONFIG_DIR=\\\"{}\\\"; claude /login\"",
-        dir_quoted
-    );
-    std::process::Command::new("osascript")
-        .arg("-e")
-        .arg(script)
-        .arg("-e")
-        .arg("tell application \"Terminal\" to activate")
-        .spawn()
-        .map_err(|e| format!("could not open Terminal: {e}"))?;
-    Ok(())
-}
-
-#[cfg(target_os = "windows")]
-fn open_login_terminal(profile_dir: &Path) -> Result<(), String> {
-    let cmdline = format!(
-        "set CLAUDE_CONFIG_DIR={} && claude /login && pause",
-        profile_dir.display()
-    );
-    std::process::Command::new("cmd.exe")
-        .args(["/C", "start", "", "cmd.exe", "/K", &cmdline])
-        .spawn()
-        .map_err(|e| format!("could not open cmd.exe: {e}"))?;
-    Ok(())
-}
-
-#[cfg(all(unix, not(target_os = "macos")))]
-fn open_login_terminal(profile_dir: &Path) -> Result<(), String> {
-    let dir_str = profile_dir.display().to_string();
-    let inner = format!(
-        "export CLAUDE_CONFIG_DIR=\"{}\"; claude /login; echo; read -p 'Press enter to close…'",
-        dir_str
-    );
-    let candidates: &[(&str, &[&str])] = &[
-        ("x-terminal-emulator", &["-e", "bash", "-c"]),
-        ("gnome-terminal", &["--", "bash", "-c"]),
-        ("konsole", &["-e", "bash", "-c"]),
-        ("xterm", &["-e", "bash", "-c"]),
-    ];
-    let mut last_err: Option<String> = None;
-    for (term, args) in candidates {
-        let mut cmd = std::process::Command::new(term);
-        cmd.args(*args).arg(&inner);
-        match cmd.spawn() {
-            Ok(_) => return Ok(()),
-            Err(e) => last_err = Some(format!("{term}: {e}")),
-        }
-    }
-    Err(format!(
-        "no supported terminal emulator found ({})",
-        last_err.unwrap_or_else(|| "tried x-terminal-emulator, gnome-terminal, konsole, xterm".into())
-    ))
-}

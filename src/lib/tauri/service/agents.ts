@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import type { Agent, AgentConfig, ProviderType } from '@/lib/types'
+import type { Agent, AgentConfig } from '@/lib/types'
 
 export const agentsApi = {
   list: () => invoke<Agent[]>('list_agents'),
@@ -8,7 +8,6 @@ export const agentsApi = {
     alias: string
     description: string | null
     avatar: string | null
-    providerType: ProviderType
     baseUrl: string | null
     apiKey?: string
     config?: AgentConfig
@@ -29,5 +28,4 @@ export const agentsApi = {
   setApiKey: (agentId: string, apiKey: string) =>
     invoke<void>('set_agent_api_key', { agentId, apiKey }),
   hasApiKey: (agentId: string) => invoke<boolean>('has_agent_api_key', { agentId }),
-  signIn: (agentId: string) => invoke<void>('sign_in_agent', { agentId }),
 }

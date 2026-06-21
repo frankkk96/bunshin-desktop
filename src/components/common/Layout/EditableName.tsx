@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { IoCheckmark, IoPencilOutline, IoClose } from 'react-icons/io5'
-import { MacOSButton, MacOSInput } from '@/components/ui'
+import { Button, Input } from '@/components/ui'
 
 interface EditableNameProps {
   name: string
@@ -88,7 +88,7 @@ export function EditableName({
     return (
       <div className={`${className}`}>
         <div className="flex items-center gap-2">
-          <MacOSInput
+          <Input
             value={editedName}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setEditedName(e.target.value)
@@ -101,12 +101,12 @@ export function EditableName({
             autoFocus
             onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.target.select()}
           />
-          <MacOSButton size="sm" variant="ghost" onClick={handleSave}>
+          <Button size="sm" variant="ghost" onClick={handleSave}>
             <IoCheckmark size={16} />
-          </MacOSButton>
-          <MacOSButton size="sm" variant="ghost" onClick={handleCancel}>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={handleCancel}>
             <IoClose size={16} />
-          </MacOSButton>
+          </Button>
         </div>
         {error && <p className="text-sm text-destructive mt-1">{error}</p>}
       </div>
@@ -114,13 +114,13 @@ export function EditableName({
   }
 
   return (
-    <MacOSButton
+    <Button
       variant="ghost"
       className={`flex items-center gap-2 h-auto p-1 justify-start text-foreground ${className}`}
       onClick={handleStartEdit}
     >
       <h1 className="text-2xl font-bold m-0">{name}</h1>
       <IoPencilOutline size={14} className="opacity-50 text-muted-foreground" />
-    </MacOSButton>
+    </Button>
   )
 }

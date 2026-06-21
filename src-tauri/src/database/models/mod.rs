@@ -2,6 +2,6 @@ pub mod agent;
 pub mod message;
 pub mod session;
 
-pub use agent::{Agent, AgentConfig, DbAgent, ProviderType};
+pub use agent::{Agent, AgentConfig, DbAgent};
 pub use message::{DbMessage, Message};
 pub use session::{DbSession, PermissionMode, Session};

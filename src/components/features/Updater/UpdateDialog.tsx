@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Update } from '@tauri-apps/plugin-updater'
-import { MacOSSheet, MacOSSheetContent, MacOSSheetTitle, MacOSSheetDescription, MacOSButton, MacOSProgress, MacOSScrollArea } from '@/components/ui'
+import { Sheet, SheetContent, SheetTitle, SheetDescription, Button, Progress, ScrollArea } from '@/components/ui'
 import { updateService, UpdateStatus } from '@/lib/core/updater/update-service'
 import { Download, AlertCircle, CheckCircle, X } from 'lucide-react'
 
@@ -39,18 +39,18 @@ export function UpdateDialog({ open, onOpenChange, update }: UpdateDialogProps) 
   if (!update) return null
 
   return (
-    <MacOSSheet isOpen={open} onClose={handleClose} maxWidth="500px" height="auto">
-      <MacOSSheetContent className="p-0 flex flex-col">
+    <Sheet isOpen={open} onClose={handleClose} maxWidth="500px" height="auto">
+      <SheetContent className="p-0 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border/20">
           <div>
-            <MacOSSheetTitle className="flex items-center gap-2">
+            <SheetTitle className="flex items-center gap-2">
               <Download className="h-4 w-4" />
               Update Available
-            </MacOSSheetTitle>
-            <MacOSSheetDescription>
+            </SheetTitle>
+            <SheetDescription>
               Version {update.version} is now available. Would you like to update?
-            </MacOSSheetDescription>
+            </SheetDescription>
           </div>
           <button
             onClick={handleClose}
@@ -67,11 +67,11 @@ export function UpdateDialog({ open, onOpenChange, update }: UpdateDialogProps) 
           {update.body && (
             <div>
               <h4 className="font-medium mb-2 text-sm">What's New:</h4>
-              <MacOSScrollArea className="h-24 w-full rounded border p-3">
+              <ScrollArea className="h-24 w-full rounded border p-3">
                 <div className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {update.body}
                 </div>
-              </MacOSScrollArea>
+              </ScrollArea>
             </div>
           )}
 
@@ -82,7 +82,7 @@ export function UpdateDialog({ open, onOpenChange, update }: UpdateDialogProps) 
                 <span>Downloading update...</span>
                 <span>{status.progress.percentage}%</span>
               </div>
-              <MacOSProgress value={status.progress.percentage} className="w-full" />
+              <Progress value={status.progress.percentage} className="w-full" />
               <div className="text-xs text-muted-foreground">
                 {formatBytes(status.progress.downloaded)} / {formatBytes(status.progress.total)}
               </div>
@@ -108,22 +108,22 @@ export function UpdateDialog({ open, onOpenChange, update }: UpdateDialogProps) 
 
         {/* Footer */}
         <div className="border-t border-border/20 px-5 py-3 flex items-center justify-end gap-2">
-          <MacOSButton
+          <Button
             variant="outline"
             onClick={handleClose}
             disabled={status.downloading}
           >
             Skip for Now
-          </MacOSButton>
-          <MacOSButton
+          </Button>
+          <Button
             onClick={handleInstallUpdate}
             disabled={status.downloading || isInstalling}
           >
             {status.downloading ? 'Downloading...' : 'Install Update'}
-          </MacOSButton>
+          </Button>
         </div>
-      </MacOSSheetContent>
-    </MacOSSheet>
+      </SheetContent>
+    </Sheet>
   )
 }
 

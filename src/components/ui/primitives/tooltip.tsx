@@ -2,7 +2,7 @@ import * as React from 'react'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { cn } from '@/lib/ui/utils'
 
-function MacOSTooltipProvider({
+function TooltipProvider({
   delayDuration = 0,
   skipDelayDuration,
   ...props
@@ -16,15 +16,15 @@ function MacOSTooltipProvider({
   )
 }
 
-function MacOSTooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
   return <TooltipPrimitive.Root {...props} />
 }
 
-function MacOSTooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
   return <TooltipPrimitive.Trigger {...props} />
 }
 
-function MacOSTooltipContent({
+function TooltipContent({
   className,
   sideOffset = 4,
   children,
@@ -52,5 +52,5 @@ function MacOSTooltipContent({
   )
 }
 
-// Export MacOS versions
-export { MacOSTooltip, MacOSTooltipTrigger, MacOSTooltipContent, MacOSTooltipProvider }
+// Export  versions
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }

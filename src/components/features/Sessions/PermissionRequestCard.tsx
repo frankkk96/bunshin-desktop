@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react'
-import { MacOSButton, MacOSInput, MacOSLabel } from '@/components/ui'
+import { Button, Input, Label } from '@/components/ui'
 import { sessionsApi } from '@/lib/tauri/service/sessions'
 import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
@@ -198,7 +198,7 @@ function ToolPermissionPrompt({
         </pre>
       )}
       <div className="px-3 py-2 border-t border-border/40 flex flex-wrap gap-2 justify-end">
-        <MacOSButton
+        <Button
           size="sm"
           variant="ghost"
           disabled={disabled}
@@ -209,8 +209,8 @@ function ToolPermissionPrompt({
           })}
         >
           Deny
-        </MacOSButton>
-        <MacOSButton
+        </Button>
+        <Button
           size="sm"
           variant="outline"
           disabled={disabled}
@@ -221,14 +221,14 @@ function ToolPermissionPrompt({
           })}
         >
           Allow always
-        </MacOSButton>
-        <MacOSButton
+        </Button>
+        <Button
           size="sm"
           disabled={disabled}
           onClick={respond({ behavior: 'allow', updatedInput: input })}
         >
           Allow
-        </MacOSButton>
+        </Button>
       </div>
     </CardShell>
   )
@@ -343,10 +343,10 @@ function AskUserQuestionPrompt({
                 )
               })}
               <div className="space-y-1.5">
-                <MacOSLabel className="text-[11px] text-muted-foreground">
+                <Label className="text-[11px] text-muted-foreground">
                   Other
-                </MacOSLabel>
-                <MacOSInput
+                </Label>
+                <Input
                   placeholder="Type a custom answer…"
                   value={otherText[q.question] ?? ''}
                   onChange={(e) => {
@@ -372,9 +372,9 @@ function AskUserQuestionPrompt({
         ))}
       </div>
       <div className="px-3 py-2 border-t border-border/40 flex justify-end gap-2">
-        <MacOSButton size="sm" disabled={disabled || !allAnswered} onClick={handleSubmit}>
+        <Button size="sm" disabled={disabled || !allAnswered} onClick={handleSubmit}>
           Submit
-        </MacOSButton>
+        </Button>
       </div>
     </CardShell>
   )
@@ -419,17 +419,17 @@ function ExitPlanModePrompt({
       </div>
       {denyMode ? (
         <div className="px-3 py-2 border-t border-border/40 space-y-2">
-          <MacOSInput
+          <Input
             autoFocus
             placeholder="What should Claude reconsider?"
             value={denyText}
             onChange={(e) => setDenyText(e.target.value)}
           />
           <div className="flex justify-end gap-2">
-            <MacOSButton size="sm" variant="ghost" onClick={() => setDenyMode(false)}>
+            <Button size="sm" variant="ghost" onClick={() => setDenyMode(false)}>
               Back
-            </MacOSButton>
-            <MacOSButton
+            </Button>
+            <Button
               size="sm"
               disabled={disabled || !denyText.trim()}
               onClick={respond({
@@ -439,15 +439,15 @@ function ExitPlanModePrompt({
               })}
             >
               Send feedback
-            </MacOSButton>
+            </Button>
           </div>
         </div>
       ) : (
         <div className="px-3 py-2 border-t border-border/40 flex flex-wrap gap-2 justify-end">
-          <MacOSButton size="sm" variant="ghost" onClick={() => setDenyMode(true)}>
+          <Button size="sm" variant="ghost" onClick={() => setDenyMode(true)}>
             Deny with feedback
-          </MacOSButton>
-          <MacOSButton
+          </Button>
+          <Button
             size="sm"
             variant="outline"
             disabled={disabled}
@@ -458,14 +458,14 @@ function ExitPlanModePrompt({
             })}
           >
             Keep planning
-          </MacOSButton>
-          <MacOSButton
+          </Button>
+          <Button
             size="sm"
             disabled={disabled}
             onClick={respond({ behavior: 'allow', updatedInput: input })}
           >
             Approve and run
-          </MacOSButton>
+          </Button>
         </div>
       )}
     </CardShell>

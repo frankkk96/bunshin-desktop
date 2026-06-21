@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
-import { MacOSTooltipProvider } from '@/components/ui'
+import { TooltipProvider } from '@/components/ui'
 
 import { router } from '@/router'
 import { ThemeProvider } from '@/contexts/ThemeProvider'
@@ -25,9 +25,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <ErrorBoundary>
-          <MacOSTooltipProvider delayDuration={100} skipDelayDuration={500}>
+          <TooltipProvider delayDuration={100} skipDelayDuration={500}>
             <RouterProvider router={router} />
-          </MacOSTooltipProvider>
+          </TooltipProvider>
         </ErrorBoundary>
       </ThemeProvider>
     </QueryClientProvider>

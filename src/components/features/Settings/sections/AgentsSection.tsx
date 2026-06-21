@@ -1,27 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  Camera,
-  Cloud,
-  Copy,
-  KeyRound,
-  Loader2,
-  Lock,
-  LogIn,
-  Pencil,
-  Plus,
-  Trash2,
-  Users,
-} from 'lucide-react'
+import { Camera, Copy, Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
 import {
-  MacOSButton,
-  MacOSInput,
-  MacOSLabel,
-  MacOSSheet,
-  MacOSSheetContent,
-  MacOSSheetDescription,
-  MacOSSheetHeader,
-  MacOSSheetTitle,
+  Button,
+  Input,
+  Label,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui'
 import { AgentAvatar } from '@/components/common'
 import { SettingSection } from '../components/SettingSection'
@@ -32,7 +20,6 @@ import {
   useDeleteAgent,
   useDuplicateAgent,
   useHasAgentApiKey,
-  useSignInAgent,
   useUpdateAgent,
 } from '@/hooks/agents'
 import { agentsApi } from '@/lib/tauri/service/agents'
@@ -55,7 +42,7 @@ export function AgentsSection() {
             <Users className="w-6 h-6 mx-auto mb-2 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">No agents yet.</p>
             <p className="text-xs text-muted-foreground/70 mt-0.5">
-              An agent bundles its own Claude login (or API key) with a saved config.
+              An agent pairs an API key with a saved Claude Code config.
             </p>
           </div>
         ) : (
@@ -66,14 +53,14 @@ export function AgentsSection() {
           </div>
         )}
 
-        <MacOSButton
+        <Button
           variant="outline"
           onClick={() => setCreating(true)}
           className="w-full justify-center"
         >
           <Plus size={14} className="mr-1" />
           New agent
-        </MacOSButton>
+        </Button>
       </div>
 
       {creating && (
@@ -92,9 +79,7 @@ export function AgentsSection() {
 }
 
 function agentSubtitle(agent: Agent): string {
-  return agent.providerType === 'subscription'
-    ? 'Claude subscription'
-    : agent.baseUrl || 'Claude API'
+  return agent.baseUrl || 'api.anthropic.com'
 }
 
 function AgentCard({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
@@ -126,10 +111,7 @@ function AgentCard({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
       <div className="flex items-center gap-3 p-3">
         <AgentAvatar agent={agent} size={36} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium truncate">{agent.alias}</span>
-            <TypeBadge agent={agent} />
-          </div>
+          <div className="text-sm font-medium truncate">{agent.alias}</div>
           <div className="text-xs text-muted-foreground truncate mt-0.5" title={agentSubtitle(agent)}>
             {agentSubtitle(agent)}
           </div>
@@ -162,15 +144,6 @@ function AgentCard({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
   )
 }
 
-function TypeBadge({ agent }: { agent: Agent }) {
-  return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wide bg-muted text-muted-foreground inline-flex items-center gap-1">
-      {agent.providerType === 'subscription' ? <Cloud size={9} /> : <KeyRound size={9} />}
-      {agent.providerType === 'subscription' ? 'Sub' : 'API'}
-    </span>
-  )
-}
-
 interface MediaPickerResult {
   media: { localPath: string; name: string; type: string; mimeType: string } | null
   cancelled: boolean
@@ -181,12 +154,7 @@ function AgentEditor({ agent, onClose }: { agent: Agent; onClose: () => void }) 
   const updateAgent = useUpdateAgent()
   const deleteAgent = useDeleteAgent()
   const duplicateAgent = useDuplicateAgent()
-  const signIn = useSignInAgent()
-  const { data: hasKey, refetch: refetchKey } = useHasAgentApiKey(
-    agent.providerType === 'api' ? agent.id : undefined,
-  )
-
-  const isApi = agent.providerType === 'api'
+  const { data: hasKey, refetch: refetchKey } = useHasAgentApiKey(agent.id)
 
   const [name, setName] = useState(agent.alias)
   const [description, setDescription] = useState(agent.description ?? '')
@@ -207,7 +175,6 @@ function AgentEditor({ agent, onClose }: { agent: Agent; onClose: () => void }) 
     lastSavedBaseUrl.current = agent.baseUrl ?? ''
   }, [agent.id])
 
-  // Shared partial update preserving the other editable fields.
   const persist = (patch: Partial<{ alias: string; description: string | null; baseUrl: string | null }>) =>
     updateAgent.mutateAsync({
       id: agent.id,
@@ -286,15 +253,6 @@ function AgentEditor({ agent, onClose }: { agent: Agent; onClose: () => void }) 
     }
   }
 
-  const handleSignIn = async () => {
-    try {
-      await signIn.mutateAsync(agent.id)
-      toast.success('Terminal opened — complete the login there.')
-    } catch (err) {
-      toast.error(String(err))
-    }
-  }
-
   const handleDuplicate = async () => {
     try {
       await duplicateAgent.mutateAsync(agent.id)
@@ -316,14 +274,12 @@ function AgentEditor({ agent, onClose }: { agent: Agent; onClose: () => void }) 
   }
 
   return (
-    <MacOSSheet isOpen onClose={onClose} maxWidth="560px" height="660px">
-      <MacOSSheetHeader>
-        <MacOSSheetTitle>Edit agent</MacOSSheetTitle>
-        <MacOSSheetDescription>
-          The auth type is locked. Duplicate to reuse this setup with tweaks.
-        </MacOSSheetDescription>
-      </MacOSSheetHeader>
-      <MacOSSheetContent className="px-6 py-5">
+    <Sheet isOpen onClose={onClose} maxWidth="560px" height="660px">
+      <SheetHeader>
+        <SheetTitle>Edit agent</SheetTitle>
+        <SheetDescription>Duplicate to reuse this setup with tweaks.</SheetDescription>
+      </SheetHeader>
+      <SheetContent className="px-6 py-5">
         <div className="flex gap-4 items-center mb-6">
           <button
             onClick={handleAvatarClick}
@@ -341,19 +297,13 @@ function AgentEditor({ agent, onClose }: { agent: Agent; onClose: () => void }) 
             </div>
           </button>
           <div className="flex-1 min-w-0 space-y-1.5">
-            <MacOSLabel>Name</MacOSLabel>
-            <MacOSInput value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} />
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Lock size={11} className="opacity-60 flex-shrink-0" />
-              <span className="truncate">
-                {agent.providerType === 'subscription' ? 'Claude subscription' : 'Claude-compatible API'}
-              </span>
-            </div>
+            <Label>Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} />
           </div>
         </div>
 
         <div className="space-y-1.5 mb-4">
-          <MacOSLabel>Description</MacOSLabel>
+          <Label>Description</Label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -364,64 +314,48 @@ function AgentEditor({ agent, onClose }: { agent: Agent; onClose: () => void }) 
           />
         </div>
 
-        {isApi ? (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <MacOSLabel>Base URL</MacOSLabel>
-              <MacOSInput
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                onBlur={handleBaseUrlBlur}
-                placeholder="https://api.anthropic.com"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <MacOSLabel>
-                API key{' '}
-                <span className="text-muted-foreground/70">
-                  ({hasKey ? 'set — leave empty to keep' : 'not set'})
-                </span>
-              </MacOSLabel>
-              <MacOSInput
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                onBlur={handleApiKeyBlur}
-                placeholder="sk-…"
-              />
-            </div>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>
+              Base URL <span className="text-muted-foreground/70">(optional)</span>
+            </Label>
+            <Input
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              onBlur={handleBaseUrlBlur}
+              placeholder="https://api.anthropic.com"
+            />
           </div>
-        ) : (
-          <div className="rounded-md border border-border/70 bg-muted/30 p-3 space-y-2">
-            <div className="text-xs text-muted-foreground leading-relaxed">
-              Sign in to this agent's isolated Claude profile. Opens a terminal running{' '}
-              <code className="px-1 py-0.5 rounded bg-muted text-[10px]">claude /login</code>.
-            </div>
-            <MacOSButton
-              variant="outline"
-              onClick={handleSignIn}
-              disabled={signIn.isPending}
-              className="w-full justify-center"
-            >
-              <LogIn size={13} className="mr-1.5" />
-              {signIn.isPending ? 'Opening…' : 'Sign in'}
-            </MacOSButton>
+          <div className="space-y-1.5">
+            <Label>
+              API key{' '}
+              <span className="text-muted-foreground/70">
+                ({hasKey ? 'set — leave empty to keep' : 'not set'})
+              </span>
+            </Label>
+            <Input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              onBlur={handleApiKeyBlur}
+              placeholder="sk-…"
+            />
           </div>
-        )}
+        </div>
 
         <AgentConfigSection agent={agent} />
 
         <div className="mt-8 pt-4 border-t border-border/40 flex items-center gap-2">
-          <MacOSButton variant="outline" onClick={handleDuplicate} disabled={duplicateAgent.isPending}>
+          <Button variant="outline" onClick={handleDuplicate} disabled={duplicateAgent.isPending}>
             <Copy size={14} className="mr-1.5" />
             Duplicate
-          </MacOSButton>
-          <MacOSButton variant="ghost" onClick={handleDelete} className="text-destructive">
+          </Button>
+          <Button variant="ghost" onClick={handleDelete} className="text-destructive">
             <Trash2 size={14} className="mr-1.5" />
             Delete
-          </MacOSButton>
+          </Button>
         </div>
-      </MacOSSheetContent>
-    </MacOSSheet>
+      </SheetContent>
+    </Sheet>
   )
 }

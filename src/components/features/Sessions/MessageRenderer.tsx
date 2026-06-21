@@ -1,8 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, LogIn } from 'lucide-react'
-import { MacOSButton } from '@/components/ui'
-import { useSignInAgent } from '@/hooks/agents'
-import { toast } from '@/lib/core/utils/toast'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/ui/utils'
 import type { Message } from '@/lib/types'
 import { Markdown } from './Markdown'
@@ -256,46 +253,15 @@ function ResultChip({ payload }: { payload: any }) {
 }
 
 function ProcessExitChip({ payload }: { payload: any }) {
-  const needsLogin = !!payload?.needs_login
-  const agentId: string | undefined = payload?.agent_id
   return (
     <div className="text-[11px] text-center text-amber-600">
-      {needsLogin ? (
-        <span className="text-foreground">
-          This agent isn't signed in yet — run <code className="px-1 py-0.5 rounded bg-muted text-[10px]">claude /login</code> in its isolated profile.
-        </span>
-      ) : (
-        <>Subprocess exited (status: {payload?.status ?? 'unknown'}, code: {payload?.code ?? '?'})</>
-      )}
-      {needsLogin && agentId && (
-        <div className="mt-2 flex justify-center">
-          <SignInButton agentId={agentId} />
-        </div>
-      )}
+      <>Subprocess exited (status: {payload?.status ?? 'unknown'}, code: {payload?.code ?? '?'})</>
       {payload?.stderr_tail && (
         <pre className="text-left text-[10px] mt-1 px-2 py-1 bg-muted rounded">
           {String(payload.stderr_tail).slice(-500)}
         </pre>
       )}
     </div>
-  )
-}
-
-export function SignInButton({ agentId }: { agentId: string }) {
-  const signIn = useSignInAgent()
-  const handle = async () => {
-    try {
-      await signIn.mutateAsync(agentId)
-      toast.success('Terminal opened — complete the login there, then resume the session.')
-    } catch (err) {
-      toast.error(String(err))
-    }
-  }
-  return (
-    <MacOSButton variant="outline" onClick={handle} disabled={signIn.isPending}>
-      <LogIn size={13} className="mr-1.5" />
-      {signIn.isPending ? 'Opening…' : 'Sign in'}
-    </MacOSButton>
   )
 }
 

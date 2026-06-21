@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Download, RotateCcw, CheckCircle } from 'lucide-react'
-import { MacOSTooltip, MacOSTooltipTrigger, MacOSTooltipContent, MacOSButton } from '@/components/ui'
+import { Tooltip, TooltipTrigger, TooltipContent, Button } from '@/components/ui'
 import { UpdateDialog } from './UpdateDialog'
 import { useUpdater } from '@/components/features/Updater/useUpdater'
 import { toast } from 'sonner'
@@ -49,10 +49,10 @@ export function UpdateIndicator() {
 
   if (!hasUpdate && !isChecking) {
     return (
-      <MacOSTooltip>
-        <MacOSTooltipTrigger asChild>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <div className="w-14 h-auto mb-2">
-            <MacOSButton
+            <Button
               onClick={() => {}} // No manual check
               className="w-full h-auto rounded-xl opacity-60 px-1 py-1.5 flex flex-col items-center gap-0.5 cursor-default"
               variant="icon"
@@ -60,23 +60,23 @@ export function UpdateIndicator() {
             >
               <CheckCircle size={14} className="text-green-600" />
               <span className="text-[8px] text-green-600 font-medium leading-none">LATEST</span>
-            </MacOSButton>
+            </Button>
           </div>
-        </MacOSTooltipTrigger>
-        <MacOSTooltipContent side="right" sideOffset={8}>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
           You have the latest version{currentVersion ? ` (v${currentVersion}` : ''}
           {currentArch ? `-${currentArch})` : currentVersion ? ')' : ''}
-        </MacOSTooltipContent>
-      </MacOSTooltip>
+        </TooltipContent>
+      </Tooltip>
     )
   }
 
   if (isChecking) {
     return (
-      <MacOSTooltip>
-        <MacOSTooltipTrigger asChild>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <div className="w-14 h-auto mb-2">
-            <MacOSButton
+            <Button
               onClick={() => {}} // Disabled button still needs onClick
               className="w-full h-auto rounded-xl px-1 py-1.5 flex flex-col items-center gap-0.5"
               variant="icon"
@@ -87,22 +87,22 @@ export function UpdateIndicator() {
               <span className="text-[8px] text-muted-foreground font-medium leading-none">
                 CHECKING
               </span>
-            </MacOSButton>
+            </Button>
           </div>
-        </MacOSTooltipTrigger>
-        <MacOSTooltipContent side="right" sideOffset={8}>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
           Checking for Updates...
-        </MacOSTooltipContent>
-      </MacOSTooltip>
+        </TooltipContent>
+      </Tooltip>
     )
   }
 
   return (
     <>
-      <MacOSTooltip>
-        <MacOSTooltipTrigger asChild>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <div className="w-14 h-auto mb-2 relative">
-            <MacOSButton
+            <Button
               onClick={handleUpdateClick}
               className="w-full h-auto rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-1 py-1.5 flex flex-col items-center gap-0.5"
               variant="icon"
@@ -112,17 +112,17 @@ export function UpdateIndicator() {
               <span className="text-[8px] text-blue-600 dark:text-blue-400 font-bold leading-none">
                 v{updateAvailable?.version}
               </span>
-            </MacOSButton>
+            </Button>
             {/* Update badge */}
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-background flex items-center justify-center">
               <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             </div>
           </div>
-        </MacOSTooltipTrigger>
-        <MacOSTooltipContent side="right" sideOffset={8}>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
           Update Available: v{updateAvailable?.version}
-        </MacOSTooltipContent>
-      </MacOSTooltip>
+        </TooltipContent>
+      </Tooltip>
 
       <UpdateDialog open={showDialog} onOpenChange={setShowDialog} update={updateAvailable} />
     </>

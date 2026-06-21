@@ -2,7 +2,7 @@ import * as React from 'react'
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
 import { cn } from '@/lib/ui/utils'
 
-export const MacOSScrollArea = React.forwardRef<
+export const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
@@ -14,14 +14,14 @@ export const MacOSScrollArea = React.forwardRef<
     <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
       {children}
     </ScrollAreaPrimitive.Viewport>
-    <MacOSScrollBar />
+    <ScrollBar />
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>
 ))
 
-MacOSScrollArea.displayName = 'MacOSScrollArea'
+ScrollArea.displayName = 'ScrollArea'
 
-const MacOSScrollBar = React.forwardRef<
+const ScrollBar = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
 >(({ className, orientation = 'vertical', ...props }, ref) => (
@@ -40,4 +40,4 @@ const MacOSScrollBar = React.forwardRef<
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ))
 
-MacOSScrollBar.displayName = 'MacOSScrollBar'
+ScrollBar.displayName = 'ScrollBar'
