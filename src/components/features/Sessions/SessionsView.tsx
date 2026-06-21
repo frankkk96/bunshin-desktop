@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { IoAddOutline } from 'react-icons/io5'
-import { SidebarContainer, NotFoundView } from '@/components/common'
+import { IoAddOutline, IoChatbubblesOutline } from 'react-icons/io5'
+import { SidebarContainer } from '@/components/common'
+import { MacOSButton } from '@/components/ui'
 import { useSessions } from '@/hooks/sessions'
 import { SessionsList } from './SessionsList'
 import { SessionView } from './SessionView'
@@ -38,6 +39,11 @@ export function SessionsView() {
     [sessions, search],
   )
 
+  const openCreate = () => {
+    setCreationDefaultAgentId(undefined)
+    setCreating(true)
+  }
+
   const selected = sessionId ? sessions.find((s) => s.id === sessionId) : null
 
   useEffect(() => {
@@ -57,16 +63,15 @@ export function SessionsView() {
         actionButton={{
           icon: IoAddOutline,
           tooltip: 'Create Session',
-          onClick: () => {
-            setCreationDefaultAgentId(undefined)
-            setCreating(true)
-          },
+          onClick: openCreate,
         }}
       >
         <SessionsList
           sessions={filtered}
           selectedId={sessionId}
           onSelect={(id) => navigate(`/sessions/${id}`)}
+          onCreate={openCreate}
+          hasAnySession={sessions.length > 0}
         />
       </SidebarContainer>
 
@@ -74,9 +79,9 @@ export function SessionsView() {
         {selected ? (
           <SessionView session={selected} key={selected.id} />
         ) : (
-          <NotFoundView
-            entityType="Session"
-            message="Pick a session on the left or create a new one."
+          <SessionsEmptyState
+            prominent={sessions.length === 0}
+            onCreate={openCreate}
           />
         )}
       </div>
@@ -91,6 +96,37 @@ export function SessionsView() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+function SessionsEmptyState({
+  prominent,
+  onCreate,
+}: {
+  prominent: boolean
+  onCreate: () => void
+}) {
+  return (
+    <div
+      data-tauri-drag-region
+      className="h-full flex flex-col items-center justify-center text-center px-8 select-none"
+    >
+      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-muted text-muted-foreground mb-5">
+        <IoChatbubblesOutline size={30} />
+      </div>
+      <h2 className="text-lg font-semibold text-foreground mb-1.5">
+        {prominent ? 'No sessions yet' : 'No session selected'}
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
+        {prominent
+          ? 'Start a Claude Code session in a project folder to begin chatting with an agent.'
+          : 'Pick a session on the left, or create a new one.'}
+      </p>
+      <MacOSButton onClick={onCreate} className="flex items-center gap-1.5 px-5">
+        <IoAddOutline size={16} />
+        Create Session
+      </MacOSButton>
     </div>
   )
 }

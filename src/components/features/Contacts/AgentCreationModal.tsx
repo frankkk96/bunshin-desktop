@@ -17,6 +17,7 @@ import {
 import { useCreateAgent } from '@/hooks/agents'
 import { useProviders } from '@/hooks/providers'
 import { toast } from '@/lib/core/utils/toast'
+import { openSettingsWindow } from '@/components/features/Settings/SettingsWindow'
 import type { Agent } from '@/lib/types'
 
 interface AgentCreationModalProps {
@@ -35,6 +36,15 @@ export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalPro
   // Refresh on open so a freshly-created provider appears without restart.
   useEffect(() => {
     void providersQuery.refetch()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // The provider settings live in a separate window; when the user comes back to
+  // this one (e.g. after adding a provider), refetch so the new one shows up.
+  useEffect(() => {
+    const onFocus = () => void providersQuery.refetch()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -90,7 +100,15 @@ export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalPro
             <MacOSLabel>Provider</MacOSLabel>
             {providers.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No providers configured yet. Go to Settings → Providers first.
+                No providers configured yet.{' '}
+                <button
+                  type="button"
+                  onClick={() => void openSettingsWindow('providers')}
+                  className="text-interactive hover:underline underline-offset-2 cursor-pointer"
+                >
+                  Set up a provider
+                </button>{' '}
+                to continue.
               </p>
             ) : (
               <MacOSSelect value={providerId} onValueChange={(v) => setProviderId(v)}>

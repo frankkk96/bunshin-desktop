@@ -1,5 +1,6 @@
-import { AlertCircle, CheckCircle2, CircleDashed, Loader2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, CircleDashed, Loader2, Plus } from 'lucide-react'
 import { AgentAvatar } from '@/components/common'
+import { MacOSButton } from '@/components/ui'
 import { useAgents } from '@/hooks/agents'
 import { useRunningSessions } from '@/hooks/sessions'
 import { cn } from '@/lib/ui/utils'
@@ -9,16 +10,42 @@ interface SessionsListProps {
   sessions: Session[]
   selectedId: string | undefined
   onSelect: (id: string) => void
+  onCreate?: () => void
+  /** Whether any session exists at all (vs the list being empty due to search). */
+  hasAnySession?: boolean
 }
 
-export function SessionsList({ sessions, selectedId, onSelect }: SessionsListProps) {
+export function SessionsList({
+  sessions,
+  selectedId,
+  onSelect,
+  onCreate,
+  hasAnySession,
+}: SessionsListProps) {
   const { data: agents = [] } = useAgents()
   const { data: running = [] } = useRunningSessions()
 
   if (sessions.length === 0) {
+    // Distinguish "no sessions at all" (offer a create CTA) from "search hid
+    // everything" (just say so).
+    if (hasAnySession) {
+      return (
+        <div className="px-4 py-6 text-xs text-muted-foreground text-center">
+          No matching sessions.
+        </div>
+      )
+    }
     return (
-      <div className="px-4 py-6 text-xs text-muted-foreground">
-        No sessions yet — click <kbd className="px-1 rounded bg-muted">+</kbd> to start one.
+      <div className="px-4 py-8 flex flex-col items-center text-center gap-3">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          No sessions yet. Start one to begin chatting with an agent.
+        </p>
+        {onCreate && (
+          <MacOSButton onClick={onCreate} className="flex items-center gap-1.5">
+            <Plus size={14} />
+            Create Session
+          </MacOSButton>
+        )}
       </div>
     )
   }

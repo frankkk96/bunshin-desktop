@@ -19,6 +19,7 @@ import { useAgents } from '@/hooks/agents'
 import { useStartSession } from '@/hooks/sessions'
 import { pickDirectory } from '@/lib/tauri/service/sessions'
 import { toast } from '@/lib/core/utils/toast'
+import { AgentCreationModal } from '@/components/features/Contacts/AgentCreationModal'
 import type { PermissionMode, Session } from '@/lib/types'
 
 interface StartSessionModalProps {
@@ -49,6 +50,7 @@ export function StartSessionModal({
   const [cwd, setCwd] = useState('')
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default')
   const [name, setName] = useState('')
+  const [creatingAgent, setCreatingAgent] = useState(false)
 
   // Refresh agents whenever the modal opens — prevents the picker from showing
   // stale data when the user just created an agent in another window.
@@ -110,9 +112,12 @@ export function StartSessionModal({
         <div className="space-y-4">
           <Field label="Agent">
             {agents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No agents yet. Create one in the Agents tab first.
-              </p>
+              <div className="flex items-center justify-between gap-3 rounded-md border border-dashed border-border px-3 py-2.5">
+                <span className="text-sm text-muted-foreground">No agents yet.</span>
+                <MacOSButton onClick={() => setCreatingAgent(true)}>
+                  Create an agent
+                </MacOSButton>
+              </div>
             ) : (
               <MacOSSelect value={agentId} onValueChange={(v) => setAgentId(v)}>
                 <MacOSSelectTrigger>
@@ -181,6 +186,17 @@ export function StartSessionModal({
           </MacOSButton>
         </div>
       </MacOSSheetContent>
+
+      {creatingAgent && (
+        <AgentCreationModal
+          onClose={() => setCreatingAgent(false)}
+          onCreated={(agent) => {
+            setCreatingAgent(false)
+            void agentsQuery.refetch()
+            setAgentId(agent.id)
+          }}
+        />
+      )}
     </MacOSSheet>
   )
 }
