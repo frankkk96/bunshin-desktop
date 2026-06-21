@@ -25,12 +25,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Preflight: fail loudly if RELEASE_TOKEN didn't reach this run. An empty
+      # token makes action-gh-release silently fall back to the default Actions
+      # token, which can't write cross-repo → "Resource not accessible by integration".
+      - name: Check RELEASE_TOKEN is present
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "${RELEASE_TOKEN}" ]; then
+            echo "::error::RELEASE_TOKEN is EMPTY/not injected into this run. Check it's a Repository secret named RELEASE_TOKEN in frankkk96/bunshin-desktop (Settings → Secrets and variables → Actions → Secrets)."
+            exit 1
+          fi
+          echo "RELEASE_TOKEN present (length=${#RELEASE_TOKEN})."
+
       - name: Create GitHub release
         id: create
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
+          token: ${{ secrets.RELEASE_TOKEN }}
           repository: ${{ env.RELEASE_REPO }}
           tag_name: ${{ github.ref_name }}
           name: Bunshin ${{ github.ref_name }}
