@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Cloud, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Cloud, KeyRound, LogIn, Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   MacOSButton,
   MacOSInput,
@@ -21,10 +21,10 @@ import {
   useDeleteProvider,
   useHasApiKey,
   useProviders,
+  useSignInProvider,
   useUpdateProvider,
 } from '@/hooks/providers'
 import { toast } from '@/lib/core/utils/toast'
-import { cn } from '@/lib/ui/utils'
 import type { Provider, ProviderType } from '@/lib/types'
 
 export function ProvidersSection() {
@@ -34,16 +34,6 @@ export function ProvidersSection() {
   return (
     <SettingSection title="Providers">
       <div className="px-4 py-3 space-y-3">
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Each agent talks to Claude Code through one of these providers.{' '}
-          <span className="font-medium text-foreground">Subscription</span> reuses your local{' '}
-          <code className="text-[11px] px-1 py-0.5 rounded bg-muted">claude auth login</code>;{' '}
-          <span className="font-medium text-foreground">API</span> providers inject{' '}
-          <code className="text-[11px] px-1 py-0.5 rounded bg-muted">ANTHROPIC_BASE_URL</code> and{' '}
-          <code className="text-[11px] px-1 py-0.5 rounded bg-muted">ANTHROPIC_API_KEY</code> into
-          the subprocess.
-        </p>
-
         {providers.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
             <Cloud className="w-6 h-6 mx-auto mb-2 text-muted-foreground/40" />
@@ -97,20 +87,13 @@ function ProviderCard({ provider, onEdit }: { provider: Provider; onEdit: () => 
 
   const subtitle =
     provider.type === 'subscription'
-      ? 'Local claude auth login'
+      ? 'Isolated Claude subscription profile'
       : provider.baseUrl ?? 'Anthropic API endpoint'
 
   return (
     <div className="group rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors">
       <div className="flex items-center gap-3 p-3">
-        <div
-          className={cn(
-            'w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0',
-            provider.type === 'subscription'
-              ? 'bg-violet-500/10 text-violet-600 dark:text-violet-400'
-              : 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
-          )}
-        >
+        <div className="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0 bg-muted/60 text-muted-foreground">
           {provider.type === 'subscription' ? <Cloud size={16} /> : <KeyRound size={16} />}
         </div>
         <div className="flex-1 min-w-0">
@@ -148,14 +131,7 @@ function ProviderCard({ provider, onEdit }: { provider: Provider; onEdit: () => 
 
 function TypeBadge({ type }: { type: ProviderType }) {
   return (
-    <span
-      className={cn(
-        'text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wide',
-        type === 'subscription'
-          ? 'bg-violet-500/10 text-violet-700 dark:text-violet-400'
-          : 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
-      )}
-    >
+    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wide bg-muted text-muted-foreground">
       {type === 'subscription' ? 'Sub' : 'API'}
     </span>
   )
@@ -163,14 +139,7 @@ function TypeBadge({ type }: { type: ProviderType }) {
 
 function KeyBadge({ present }: { present: boolean }) {
   return (
-    <span
-      className={cn(
-        'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
-        present
-          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-          : 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-      )}
-    >
+    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">
       {present ? 'key set' : 'no key'}
     </span>
   )
@@ -191,6 +160,7 @@ function ProviderEditor({
 
   const create = useCreateProvider()
   const update = useUpdateProvider()
+  const signIn = useSignInProvider()
 
   // Reset local state if the user opens a different provider for editing.
   useEffect(() => {
@@ -227,27 +197,33 @@ function ProviderEditor({
     }
   }
 
+  const typeHint =
+    type === 'subscription'
+      ? 'Each subscription provider has its own isolated Claude profile — sign in once after creating.'
+      : 'Custom base URL and API key (e.g. Anthropic, OpenRouter, a self-hosted proxy).'
+
+  const handleSignIn = async () => {
+    if (!provider) return
+    try {
+      await signIn.mutateAsync(provider.id)
+      toast.success('Terminal opened — complete the login there.')
+    } catch (err) {
+      toast.error(String(err))
+    }
+  }
+
   return (
     <MacOSSheet isOpen onClose={onClose} maxWidth="480px" height="auto">
       <MacOSSheetHeader>
         <MacOSSheetTitle>{isNew ? 'New provider' : `Edit ${provider!.name}`}</MacOSSheetTitle>
         <MacOSSheetDescription>
           {isNew
-            ? 'Subscription reuses the local claude CLI; API needs a base URL and key.'
-            : 'Provider type is fixed after creation.'}
+            ? 'Type is fixed after creation. Subscription providers need a one-time sign-in afterwards.'
+            : 'Type is fixed after creation.'}
         </MacOSSheetDescription>
       </MacOSSheetHeader>
       <MacOSSheetContent className="px-6 py-5">
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <MacOSLabel>Name</MacOSLabel>
-            <MacOSInput
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Anthropic"
-            />
-          </div>
           <div className="space-y-1.5">
             <MacOSLabel>Type</MacOSLabel>
             {isNew ? (
@@ -263,6 +239,16 @@ function ProviderEditor({
             ) : (
               <MacOSInput value={type} disabled />
             )}
+            <p className="text-xs text-muted-foreground">{typeHint}</p>
+          </div>
+          <div className="space-y-1.5">
+            <MacOSLabel>Name</MacOSLabel>
+            <MacOSInput
+              autoFocus={isNew}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Anthropic"
+            />
           </div>
           {type === 'api' && (
             <>
@@ -287,12 +273,24 @@ function ProviderEditor({
               </div>
             </>
           )}
-          {type === 'subscription' && (
-            <p className="text-xs text-muted-foreground">
-              Make sure you've run{' '}
-              <code className="px-1 py-0.5 rounded bg-muted">claude auth login</code> in your
-              terminal first.
-            </p>
+          {!isNew && type === 'subscription' && (
+            <div className="rounded-md border border-border/70 bg-muted/30 p-3 space-y-2">
+              <div className="text-xs text-muted-foreground leading-relaxed">
+                Sign in to this provider's isolated profile. Opens a terminal that
+                runs <code className="px-1 py-0.5 rounded bg-muted text-[10px]">claude /login</code>
+                {' '}with the right <code className="px-1 py-0.5 rounded bg-muted text-[10px]">CLAUDE_CONFIG_DIR</code>.
+              </div>
+              <MacOSButton
+                size="sm"
+                variant="outline"
+                onClick={handleSignIn}
+                disabled={signIn.isPending}
+                className="w-full justify-center"
+              >
+                <LogIn size={13} className="mr-1.5" />
+                {signIn.isPending ? 'Opening…' : 'Sign in'}
+              </MacOSButton>
+            </div>
           )}
         </div>
         <div className="flex justify-end gap-2 mt-6">

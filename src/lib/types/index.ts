@@ -56,10 +56,3 @@ export interface RunningSessionInfo {
   sessionId: string
   status: 'running' | 'stopped' | 'crashed'
 }
-
-export interface MediaAttachment {
-  localPath: string
-  name: string
-  mediaType: 'image' | 'pdf' | 'video' | 'audio' | 'document'
-  mimeType: string
-}

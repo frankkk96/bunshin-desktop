@@ -12,6 +12,7 @@ import { cn } from '@/lib/ui/utils'
 
 interface ComposerProps {
   disabled?: boolean
+  disabledHint?: string
   canCancel?: boolean
   onSend: (text: string, attachments: any[]) => Promise<void> | void
   onCancel: () => void
@@ -29,7 +30,13 @@ interface MediaPickerResult {
   error: string | null
 }
 
-export function Composer({ disabled, canCancel, onSend, onCancel }: ComposerProps) {
+export function Composer({
+  disabled,
+  disabledHint,
+  canCancel,
+  onSend,
+  onCancel,
+}: ComposerProps) {
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<PickedAttachment[]>([])
   const [busy, setBusy] = useState(false)
@@ -110,7 +117,11 @@ export function Composer({ disabled, canCancel, onSend, onCancel }: ComposerProp
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKey}
-            placeholder={disabled ? 'Subprocess not running…' : 'Ask me anything...'}
+            placeholder={
+              disabled
+                ? disabledHint ?? 'Subprocess not running…'
+                : 'Ask me anything...'
+            }
             rows={2}
             disabled={disabled || busy}
             className="w-full border-none bg-transparent text-sm outline-none resize-none pb-10 pr-12 min-h-[30px] max-h-[160px] leading-snug text-foreground"

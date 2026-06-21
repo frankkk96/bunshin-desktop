@@ -7,10 +7,6 @@ function MacOSSelect({ ...props }: React.ComponentProps<typeof SelectPrimitive.R
   return <SelectPrimitive.Root {...props} />
 }
 
-function MacOSSelectGroup({ ...props }: React.ComponentProps<typeof SelectPrimitive.Group>) {
-  return <SelectPrimitive.Group {...props} />
-}
-
 function MacOSSelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value {...props} />
 }
@@ -92,20 +88,6 @@ function MacOSSelectContent({
 
 MacOSSelectContent.displayName = 'MacOSSelectContent'
 
-function MacOSSelectLabel({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Label>) {
-  return (
-    <SelectPrimitive.Label
-      className={cn('px-2 py-1.5 text-xs text-muted-foreground', className)}
-      {...props}
-    />
-  )
-}
-
-MacOSSelectLabel.displayName = 'MacOSSelectLabel'
-
 function MacOSSelectItem({
   className,
   children,
@@ -133,17 +115,6 @@ function MacOSSelectItem({
 }
 
 MacOSSelectItem.displayName = 'MacOSSelectItem'
-
-function MacOSSelectSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
-  return (
-    <SelectPrimitive.Separator className={cn('-mx-1 my-1 h-px bg-border', className)} {...props} />
-  )
-}
-
-MacOSSelectSeparator.displayName = 'MacOSSelectSeparator'
 
 function MacOSSelectScrollUpButton({
   className,
@@ -181,12 +152,7 @@ MacOSSelectScrollDownButton.displayName = 'MacOSSelectScrollDownButton'
 export {
   MacOSSelect,
   MacOSSelectContent,
-  MacOSSelectGroup,
   MacOSSelectItem,
-  MacOSSelectLabel,
-  MacOSSelectScrollDownButton,
-  MacOSSelectScrollUpButton,
-  MacOSSelectSeparator,
   MacOSSelectTrigger,
   MacOSSelectValue,
 }

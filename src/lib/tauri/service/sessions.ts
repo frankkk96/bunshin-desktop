@@ -8,13 +8,7 @@ import type {
 
 export const sessionsApi = {
   list: () => invoke<Session[]>('list_sessions'),
-  get: (id: string) => invoke<Session | null>('get_session', { id }),
   delete: (id: string) => invoke<void>('delete_session', { id }),
-  setFavorite: (id: string, favorite: boolean) =>
-    invoke<void>('update_session_favorite', { id, favorite }),
-  markVisited: (id: string) => invoke<void>('update_session_visited', { id }),
-  rename: (id: string, name: string | null) =>
-    invoke<void>('rename_session', { id, name }),
   start: (input: {
     agentId: string
     cwd: string
@@ -30,6 +24,11 @@ export const sessionsApi = {
   }) => invoke<void>('send_user_message', { input }),
   cancel: (sessionId: string) => invoke<void>('cancel_query', { sessionId }),
   clear: (sessionId: string) => invoke<void>('clear_session', { sessionId }),
+  respondToPermission: (input: {
+    sessionId: string
+    requestId: string
+    response: unknown
+  }) => invoke<void>('respond_to_permission', { input }),
   listRunning: () => invoke<RunningSessionInfo[]>('list_running_sessions'),
   getMessages: (sessionId: string) =>
     invoke<Message[]>('get_messages_by_session', { sessionId }),

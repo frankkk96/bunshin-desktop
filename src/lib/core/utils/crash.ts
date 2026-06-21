@@ -9,7 +9,7 @@ import { arch, platform, version } from '@tauri-apps/plugin-os'
  */
 
 // Types matching api.yaml schema
-export interface CrashReport {
+interface CrashReport {
   id: string
   timestamp: string
   appVersion: string
@@ -45,11 +45,11 @@ export interface CrashReport {
   }
 }
 
-export interface CrashReportRequest {
+interface CrashReportRequest {
   reports: CrashReport[]
 }
 
-export interface CrashReportResponse {
+interface CrashReportResponse {
   success: boolean
   received: number
   errors?: string[]
@@ -58,7 +58,7 @@ export interface CrashReportResponse {
 /**
  * 读取应用日志文件
  */
-export async function readLogFile(): Promise<string> {
+async function readLogFile(): Promise<string> {
   try {
     const logContent = await logsService.read()
     return logContent
@@ -71,7 +71,7 @@ export async function readLogFile(): Promise<string> {
 /**
  * 触发测试崩溃（用于测试日志系统）
  */
-export async function triggerTestCrash(): Promise<void> {
+async function triggerTestCrash(): Promise<void> {
   try {
     // 在前端记录测试日志
     logger.info('=== Test Crash Started ===')

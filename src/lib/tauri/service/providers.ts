@@ -13,4 +13,5 @@ export const providersApi = {
     invoke<void>('set_provider_api_key', { providerId, apiKey }),
   hasApiKey: (providerId: string) =>
     invoke<boolean>('has_provider_api_key', { providerId }),
+  signIn: (providerId: string) => invoke<void>('sign_in_provider', { providerId }),
 }

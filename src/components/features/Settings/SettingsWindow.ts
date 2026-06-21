@@ -1,5 +1,4 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { handleRuntimeError } from '@/lib/core/utils/error'
 import { type } from '@tauri-apps/plugin-os'
 
 let settingsWindow: WebviewWindow | null = null
@@ -72,17 +71,3 @@ export async function openSettingsWindow(defaultSection: string) {
   }
 }
 
-export async function closeSettingsWindow() {
-  if (settingsWindow) {
-    try {
-      await settingsWindow.close()
-    } catch (error) {
-      handleRuntimeError(error, { message: 'Failed to close settings window' })
-    }
-    settingsWindow = null
-  }
-}
-
-export function getSettingsWindow() {
-  return settingsWindow
-}

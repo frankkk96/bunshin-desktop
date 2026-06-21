@@ -35,6 +35,54 @@ pub struct ControlInterruptBody {
     pub subtype: &'static str, // always "interrupt"
 }
 
+/// Initialize the SDK control channel. The CLI accepts this with no flags as
+/// long as `--input-format stream-json` is set, and after handshake it routes
+/// `can_use_tool` / `hook_callback` / `mcp_message` through `control_request`
+/// rather than auto-denying.
+#[derive(Debug, Clone, Serialize)]
+pub struct ControlInitialize {
+    #[serde(rename = "type")]
+    pub type_: &'static str, // always "control_request"
+    pub request_id: String,
+    pub request: ControlInitializeBody,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ControlInitializeBody {
+    pub subtype: &'static str, // always "initialize"
+    /// Empty object: we don't register any hooks (we handle permission via
+    /// `can_use_tool` directly, not via PreToolUse hooks).
+    pub hooks: serde_json::Value,
+}
+
+pub fn build_initialize() -> ControlInitialize {
+    ControlInitialize {
+        type_: "control_request",
+        request_id: format!("req_init_{}", uuid::Uuid::new_v4()),
+        request: ControlInitializeBody {
+            subtype: "initialize",
+            hooks: serde_json::json!({}),
+        },
+    }
+}
+
+/// Reply to a `control_request`. Success carries arbitrary inner data
+/// (e.g. for `can_use_tool`: `{behavior:"allow", updatedInput:{...}}`).
+pub fn build_control_success(
+    request_id: &str,
+    response: serde_json::Value,
+) -> serde_json::Value {
+    serde_json::json!({
+        "type": "control_response",
+        "response": {
+            "subtype": "success",
+            "request_id": request_id,
+            "response": response,
+        }
+    })
+}
+
+
 /// Anything the child writes on stdout (one JSON object per line).
 /// We keep it as a tagged passthrough so the frontend gets the raw event.
 #[derive(Debug, Clone, Serialize, Deserialize)]

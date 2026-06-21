@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, LogIn } from 'lucide-react'
+import { MacOSButton } from '@/components/ui'
+import { useSignInProvider } from '@/hooks/providers'
+import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
 import type { Message } from '@/lib/types'
+import { Markdown } from './Markdown'
+import { PermissionRequestCard } from './PermissionRequestCard'
 
 interface MessageRendererProps {
   message: Message
@@ -37,10 +40,14 @@ export function MessageRenderer({ message }: MessageRendererProps) {
     case 'process_exit':
       return <ProcessExitChip payload={payload} />
 
-    case 'stream_event':
-      // Partial deltas — skip; the assistant turn render handles whole turns.
+    case 'control_request':
+      return <PermissionRequestCard message={message} />
+
+    case 'local_control_response':
+      // The card itself renders the resolved-state chip by looking this up.
       return null
 
+    case 'stream_event':
     case 'control_response':
       return null
 
@@ -71,17 +78,10 @@ function AssistantTurn({ payload }: { payload: any }) {
   const blocks: any[] = payload?.message?.content ?? []
   if (!Array.isArray(blocks) || blocks.length === 0) return null
   return (
-    <div className="flex flex-col gap-2 max-w-[90%]">
+    <div className="flex flex-col gap-2 max-w-full">
       {blocks.map((block, idx) => {
         if (block.type === 'text') {
-          return (
-            <div
-              key={idx}
-              className="prose prose-sm dark:prose-invert max-w-none rounded-2xl bg-muted/40 px-4 py-2"
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.text ?? ''}</ReactMarkdown>
-            </div>
-          )
+          return <Markdown key={idx}>{block.text ?? ''}</Markdown>
         }
         if (block.type === 'thinking') {
           return <ThinkingBlock key={idx} text={block.thinking ?? ''} />
@@ -98,16 +98,16 @@ function AssistantTurn({ payload }: { payload: any }) {
 function ThinkingBlock({ text }: { text: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="border border-border/40 rounded-md text-sm">
+    <div className="text-sm">
       <button
-        className="w-full flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground"
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         onClick={() => setOpen((v) => !v)}
       >
         {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         Thinking
       </button>
       {open && (
-        <div className="px-3 pb-2 text-xs whitespace-pre-wrap text-muted-foreground">
+        <div className="mt-1 pl-4 text-xs whitespace-pre-wrap text-muted-foreground border-l border-border/40">
           {text}
         </div>
       )}
@@ -118,19 +118,25 @@ function ThinkingBlock({ text }: { text: string }) {
 function ToolUseCard({ block }: { block: any }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="border border-border rounded-md text-sm">
+    <div className="border border-border/60 rounded-md text-sm bg-muted/20 overflow-hidden">
       <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-left"
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/40 transition-colors cursor-pointer"
         onClick={() => setOpen((v) => !v)}
       >
-        {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted">{block.name}</span>
-        <span className="text-xs text-muted-foreground truncate">
+        {open ? (
+          <ChevronDown size={12} className="text-muted-foreground flex-shrink-0" />
+        ) : (
+          <ChevronRight size={12} className="text-muted-foreground flex-shrink-0" />
+        )}
+        <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground/90 flex-shrink-0">
+          {block.name}
+        </span>
+        <span className="text-xs text-muted-foreground truncate min-w-0">
           {summariseToolInput(block.input)}
         </span>
       </button>
       {open && (
-        <pre className="px-3 pb-2 text-[11px] overflow-x-auto bg-muted/30">
+        <pre className="px-3 py-2 text-[11px] leading-relaxed overflow-x-auto bg-muted/40 border-t border-border/40 whitespace-pre-wrap break-all">
           {JSON.stringify(block.input ?? {}, null, 2)}
         </pre>
       )}
@@ -144,7 +150,10 @@ function summariseToolInput(input: any): string {
   if (keys.length === 0) return ''
   const first = keys[0]
   const v = input[first]
-  if (typeof v === 'string') return `${first}: ${v.slice(0, 80)}`
+  if (typeof v === 'string') {
+    const flat = v.replace(/\s+/g, ' ').trim()
+    return `${first}: ${flat.slice(0, 100)}${flat.length > 100 ? '…' : ''}`
+  }
   return `${keys.length} field${keys.length === 1 ? '' : 's'}`
 }
 
@@ -160,19 +169,64 @@ function ToolResultBlocks({ payload }: { payload: any }) {
               .map((c: any) => (c.type === 'text' ? c.text : JSON.stringify(c)))
               .join('\n')
           : String(b.content ?? '')
-        return (
-          <div
-            key={i}
-            className={cn(
-              'border-l-2 pl-3 text-xs whitespace-pre-wrap font-mono',
-              b.is_error ? 'border-red-500 text-red-700' : 'border-muted',
-            )}
-          >
-            {text || '(empty result)'}
-          </div>
-        )
+        return <ToolResultCard key={i} text={text} isError={!!b.is_error} />
       })}
     </>
+  )
+}
+
+function ToolResultCard({ text, isError }: { text: string; isError: boolean }) {
+  const [open, setOpen] = useState(false)
+  const trimmed = text.trim()
+  const lines = trimmed ? trimmed.split('\n').length : 0
+  const chars = trimmed.length
+
+  const summary = trimmed
+    ? `${lines} line${lines === 1 ? '' : 's'} · ${chars.toLocaleString()} char${chars === 1 ? '' : 's'}`
+    : 'empty'
+
+  return (
+    <div
+      className={cn(
+        'border rounded-md text-sm overflow-hidden',
+        isError ? 'border-red-500/40 bg-red-500/5' : 'border-border/60 bg-muted/20',
+      )}
+    >
+      <button
+        className={cn(
+          'w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors cursor-pointer',
+          isError ? 'hover:bg-red-500/10' : 'hover:bg-muted/40',
+        )}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {open ? (
+          <ChevronDown size={12} className="text-muted-foreground flex-shrink-0" />
+        ) : (
+          <ChevronRight size={12} className="text-muted-foreground flex-shrink-0" />
+        )}
+        <span
+          className={cn(
+            'text-[11px] px-1.5 py-0.5 rounded font-medium flex-shrink-0',
+            isError
+              ? 'bg-red-500/10 text-red-700 dark:text-red-400'
+              : 'bg-muted text-muted-foreground',
+          )}
+        >
+          {isError ? 'error' : 'result'}
+        </span>
+        <span className="text-xs text-muted-foreground truncate">{summary}</span>
+      </button>
+      {open && (
+        <pre
+          className={cn(
+            'px-3 py-2 text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all border-t border-border/40 font-mono',
+            isError ? 'bg-red-500/5 text-red-800 dark:text-red-300' : 'bg-muted/40',
+          )}
+        >
+          {trimmed || '(empty result)'}
+        </pre>
+      )}
+    </div>
   )
 }
 
@@ -202,9 +256,22 @@ function ResultChip({ payload }: { payload: any }) {
 }
 
 function ProcessExitChip({ payload }: { payload: any }) {
+  const needsLogin = !!payload?.needs_login
+  const providerId: string | undefined = payload?.provider_id
   return (
     <div className="text-[11px] text-center text-amber-600">
-      Subprocess exited (status: {payload?.status ?? 'unknown'}, code: {payload?.code ?? '?'})
+      {needsLogin ? (
+        <span className="text-foreground">
+          This provider isn't signed in yet — run <code className="px-1 py-0.5 rounded bg-muted text-[10px]">claude /login</code> in its isolated profile.
+        </span>
+      ) : (
+        <>Subprocess exited (status: {payload?.status ?? 'unknown'}, code: {payload?.code ?? '?'})</>
+      )}
+      {needsLogin && providerId && (
+        <div className="mt-2 flex justify-center">
+          <SignInButton providerId={providerId} />
+        </div>
+      )}
       {payload?.stderr_tail && (
         <pre className="text-left text-[10px] mt-1 px-2 py-1 bg-muted rounded">
           {String(payload.stderr_tail).slice(-500)}
@@ -214,11 +281,32 @@ function ProcessExitChip({ payload }: { payload: any }) {
   )
 }
 
+export function SignInButton({ providerId }: { providerId: string }) {
+  const signIn = useSignInProvider()
+  const handle = async () => {
+    try {
+      await signIn.mutateAsync(providerId)
+      toast.success('Terminal opened — complete the login there, then resume the session.')
+    } catch (err) {
+      toast.error(String(err))
+    }
+  }
+  return (
+    <MacOSButton size="sm" variant="outline" onClick={handle} disabled={signIn.isPending}>
+      <LogIn size={13} className="mr-1.5" />
+      {signIn.isPending ? 'Opening…' : 'Sign in'}
+    </MacOSButton>
+  )
+}
+
 function RawDebug({ payload, kind }: { payload: any; kind: string }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="text-[11px] text-muted-foreground">
-      <button onClick={() => setOpen((v) => !v)} className="underline">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="underline cursor-pointer"
+      >
         {open ? 'Hide' : 'Show'} {kind} event
       </button>
       {open && (

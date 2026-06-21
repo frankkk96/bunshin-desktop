@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, Loader2, Lock } from 'lucide-react'
 import { IoChatbubbleOutline } from 'react-icons/io5'
 import { invoke } from '@tauri-apps/api/core'
 import {
@@ -147,8 +147,12 @@ export function AgentDetail({ agent }: AgentDetailProps) {
               onSave={handleNameSave}
               checkDuplicate={checkDuplicateName}
             />
-            <div className="text-xs text-muted-foreground truncate" title={providerLine}>
-              {providerLine}
+            <div
+              className="flex items-center gap-1 text-xs text-muted-foreground"
+              title={`${providerLine} — locked after creation`}
+            >
+              <Lock size={11} className="opacity-60 flex-shrink-0" />
+              <span className="truncate">{providerLine}</span>
             </div>
             <div className="mt-3">
               <MacOSButton

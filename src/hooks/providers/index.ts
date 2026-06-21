@@ -76,3 +76,9 @@ export function useHasApiKey(providerId: string | undefined) {
     enabled: !!providerId,
   })
 }
+
+export function useSignInProvider() {
+  return useMutation({
+    mutationFn: (providerId: string) => providersApi.signIn(providerId),
+  })
+}

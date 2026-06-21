@@ -84,17 +84,6 @@ impl SessionRepository {
         Ok(())
     }
 
-    pub async fn update_favorite(&self, id: &str, favorite: bool) -> AppResult<()> {
-        let now = chrono::Utc::now().timestamp_millis();
-        sqlx::query("UPDATE sessions SET favorite = ?, updated_at = ? WHERE id = ?")
-            .bind(if favorite { 1i64 } else { 0i64 })
-            .bind(now)
-            .bind(id)
-            .execute(&self.pool)
-            .await?;
-        Ok(())
-    }
-
     pub async fn update_visited(&self, id: &str) -> AppResult<()> {
         let now = chrono::Utc::now().timestamp_millis();
         sqlx::query("UPDATE sessions SET visited_at = ?, updated_at = ? WHERE id = ?")
@@ -106,16 +95,6 @@ impl SessionRepository {
         Ok(())
     }
 
-    pub async fn rename(&self, id: &str, name: Option<String>) -> AppResult<()> {
-        let now = chrono::Utc::now().timestamp_millis();
-        sqlx::query("UPDATE sessions SET name = ?, updated_at = ? WHERE id = ?")
-            .bind(name.as_deref())
-            .bind(now)
-            .bind(id)
-            .execute(&self.pool)
-            .await?;
-        Ok(())
-    }
 
     /// Rotate the underlying claude session UUID. Used by the Clear action so
     /// the next subprocess starts with a truly empty conversation.

@@ -1,6 +1,6 @@
 import { debug, info, warn, error as logError } from '@tauri-apps/plugin-log'
 
-export enum LogLevel {
+enum LogLevel {
   DEBUG = 0,
   INFO = 1,
   WARN = 2,
@@ -120,13 +120,3 @@ class TauriLogger {
 }
 
 export const logger = new TauriLogger()
-
-// Alternative: Create a logger factory for component-specific loggers
-export function createLogger(componentName: string) {
-  return {
-    debug: (message: string, data?: any) => logger.debug(`[${componentName}] ${message}`, data),
-    info: (message: string, data?: any) => logger.info(`[${componentName}] ${message}`, data),
-    warn: (message: string, data?: any) => logger.warn(`[${componentName}] ${message}`, data),
-    error: (message: string, error?: any) => logger.error(`[${componentName}] ${message}`, error),
-  }
-}

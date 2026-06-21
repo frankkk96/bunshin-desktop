@@ -1,8 +1,11 @@
+use crate::claude_agent::commands::PROVIDER_KEY_SERVICE;
+use crate::claude_agent::process::provider_profile_dir;
 use crate::database::models::{Provider, ProviderType};
 use crate::database::repositories::ProviderRepository;
 use crate::database::AppState;
+use crate::secure_storage::SecureStorage;
 use serde::Deserialize;
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -78,7 +81,37 @@ pub async fn update_provider(
 }
 
 #[tauri::command]
-pub async fn delete_provider(id: String, state: State<'_, AppState>) -> Result<(), String> {
-    let repo = ProviderRepository::new(state.db_pool.clone());
-    repo.delete(&id).await.map_err(|e| e.to_string())
+pub async fn delete_provider(
+    id: String,
+    state: State<'_, AppState>,
+    app: AppHandle,
+) -> Result<(), String> {
+    // ON DELETE RESTRICT — fails fast if agents still reference this provider.
+    ProviderRepository::new(state.db_pool.clone())
+        .delete(&id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Best-effort cleanup of side-channel state: a partial cleanup is OK because
+    // the canonical record (the SQL row) is already gone.
+    if let Ok(app_data_dir) = app.path().app_data_dir() {
+        let storage =
+            SecureStorage::with_base_dir(PROVIDER_KEY_SERVICE.to_string(), app_data_dir);
+        if let Err(e) = storage.delete(&id) {
+            log::warn!("provider {id}: failed to delete secure key: {e}");
+        }
+    }
+
+    if let Ok(profile_dir) = provider_profile_dir(&app, &id) {
+        if profile_dir.exists() {
+            if let Err(e) = std::fs::remove_dir_all(&profile_dir) {
+                log::warn!(
+                    "provider {id}: failed to remove profile dir {}: {e}",
+                    profile_dir.display()
+                );
+            }
+        }
+    }
+
+    Ok(())
 }

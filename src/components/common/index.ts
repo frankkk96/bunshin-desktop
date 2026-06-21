@@ -4,8 +4,6 @@
 export { IconButton } from './Buttons/IconButton'
 export { DeleteButton } from './Buttons/DeleteButton'
 
-export { CachedImage } from './Images/CachedImage'
-
 export { AgentAvatar } from './Avatar/AgentAvatar'
 
 export { SidebarContainer } from './Layout/SidebarContainer'

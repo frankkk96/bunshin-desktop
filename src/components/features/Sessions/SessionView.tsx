@@ -39,8 +39,9 @@ import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
 import { formatRelativeTime } from '@/lib/ui/formatters/time'
 import type { Message, Session } from '@/lib/types'
-import { MessageRenderer } from './MessageRenderer'
+import { MessageRenderer, SignInButton } from './MessageRenderer'
 import { Composer } from './Composer'
+import { PermissionProvider, hasPendingPermission } from './PermissionRequestCard'
 
 interface SessionViewProps {
   session: Session
@@ -119,6 +120,30 @@ export function SessionView({ session }: SessionViewProps) {
     }
     return merged.sort((a, b) => a.seq - b.seq)
   }, [initialMessages, liveMessages])
+
+  const pendingPermission = useMemo(
+    () => hasPendingPermission(allMessages),
+    [allMessages],
+  )
+
+  // If the most recent subprocess exit was a "needs login" exit, surface a
+  // sign-in button in the header so the user doesn't have to dig into Settings
+  // or guess what `Please run /login` means. Cleared when a fresh process
+  // starts (status becomes 'running').
+  const loginPrompt = useMemo(() => {
+    if (status === 'running') return null
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      const m = allMessages[i]
+      if (m.kind !== 'process_exit') continue
+      if (m.payload?.needs_login && m.payload?.provider_id) {
+        return { providerId: String(m.payload.provider_id) }
+      }
+      // Stop at the latest process_exit even if it isn't a login error —
+      // otherwise we'd surface a stale prompt from earlier in history.
+      return null
+    }
+    return null
+  }, [allMessages, status])
 
   const siblingSessions = useMemo(
     () =>
@@ -206,7 +231,12 @@ export function SessionView({ session }: SessionViewProps) {
               >
                 {session.name || agent?.alias || 'Session'}
               </span>
-              <StatusIcon status={status} busy={turnBusy} />
+              <StatusIcon
+                status={status}
+                busy={turnBusy}
+                needsLogin={!!loginPrompt}
+              />
+              {loginPrompt && <SignInButton providerId={loginPrompt.providerId} />}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1 max-w-[420px]">
               <span className="font-mono">{session.cwd}</span>
@@ -280,21 +310,30 @@ export function SessionView({ session }: SessionViewProps) {
         </div>
       </header>
 
-      <div ref={scrollerRef} className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-        {allMessages.length === 0 && (
-          <div className="text-center text-sm text-muted-foreground py-12">
-            {isRunning
-              ? 'Send your first message below.'
-              : 'Subprocess is starting up…'}
-          </div>
-        )}
-        {allMessages.map((m) => (
-          <MessageRenderer key={m.id} message={m} />
-        ))}
-      </div>
+      <PermissionProvider
+        sessionId={session.id}
+        isRunning={isRunning}
+        messages={allMessages}
+      >
+        <div ref={scrollerRef} className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          {allMessages.length === 0 && (
+            <div className="text-center text-sm text-muted-foreground py-12">
+              {isRunning
+                ? 'Send your first message below.'
+                : 'Subprocess is starting up…'}
+            </div>
+          )}
+          {allMessages.map((m) => (
+            <MessageRenderer key={m.id} message={m} />
+          ))}
+        </div>
+      </PermissionProvider>
 
       <Composer
-        disabled={!isRunning}
+        disabled={!isRunning || pendingPermission}
+        disabledHint={
+          pendingPermission ? 'Resolve the permission prompt above to continue' : undefined
+        }
         onSend={handleSend}
         onCancel={handleCancel}
         canCancel={isRunning && turnBusy}
@@ -417,10 +456,19 @@ function SessionHistoryList({
 function StatusIcon({
   status,
   busy,
+  needsLogin,
 }: {
   status?: 'running' | 'stopped' | 'crashed'
   busy: boolean
+  needsLogin?: boolean
 }) {
+  if (needsLogin) {
+    return (
+      <Tip text="Provider not signed in">
+        <AlertCircle size={14} className="text-amber-500" />
+      </Tip>
+    )
+  }
   if (status === 'crashed') {
     return (
       <Tip text="Subprocess crashed">

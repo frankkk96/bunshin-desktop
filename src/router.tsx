@@ -14,7 +14,7 @@ function RootLayout() {
   )
 }
 
-export const routes: RouteObject[] = [
+const routes: RouteObject[] = [
   {
     path: '/',
     element: <RootLayout />,

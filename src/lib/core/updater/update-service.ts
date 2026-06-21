@@ -3,7 +3,7 @@ import { logger } from '@/lib/core/utils/logger'
 import { toast } from 'sonner'
 import { Update } from '@tauri-apps/plugin-updater'
 
-export interface UpdateProgress {
+interface UpdateProgress {
   downloaded: number
   total: number
   percentage: number

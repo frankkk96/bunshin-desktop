@@ -1,7 +1,6 @@
 use age::{secrecy::ExposeSecret, x25519, Decryptor, Encryptor, Identity};
 use anyhow::{Context, Result};
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -187,27 +186,6 @@ impl SecureStorage {
         self.cache.remove(key);
         self.save_storage()?;
         Ok(())
-    }
-
-    pub fn set_json<T: Serialize>(&self, key: &str, value: &T) -> Result<()> {
-        let json = serde_json::to_string(value).context("Failed to serialize value to JSON")?;
-        self.set(key, &json)
-    }
-
-    pub fn get_json<T: for<'de> Deserialize<'de>>(&self, key: &str) -> Result<Option<T>> {
-        match self.get(key)? {
-            Some(json) => {
-                let value =
-                    serde_json::from_str(&json).context("Failed to deserialize value from JSON")?;
-                Ok(Some(value))
-            }
-            None => Ok(None),
-        }
-    }
-
-    pub fn list_keys(&self) -> Vec<String> {
-        let _ = self.ensure_loaded(); // Ignore error, return empty list on failure
-        self.cache.iter().map(|entry| entry.key().clone()).collect()
     }
 }
 

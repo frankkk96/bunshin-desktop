@@ -37,12 +37,9 @@ sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite"] }
 fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 
 tokio = { version = "1", features = ["full"] }
-tokio-util = "0.7"
-futures-util = "0.3"
 anyhow = "1.0"
 dashmap = "5.5"
 log = "0.4"
-open = "5.3.2"
 
 # Age-encrypted secure storage for provider API keys
 age = "0.10"

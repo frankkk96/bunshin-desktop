@@ -1,3 +1,4 @@
+import { AlertCircle, CheckCircle2, CircleDashed, Loader2 } from 'lucide-react'
 import { AgentAvatar } from '@/components/common'
 import { useAgents } from '@/hooks/agents'
 import { useRunningSessions } from '@/hooks/sessions'
@@ -43,10 +44,10 @@ export function SessionsList({ sessions, selectedId, onSelect }: SessionsListPro
               <AgentAvatar agent={agent} size={36} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
-                  <span className="text-sm font-semibold text-foreground truncate flex-1">
+                  <span className="text-sm font-semibold text-foreground truncate">
                     {title}
                   </span>
-                  <StatusDot status={status} />
+                  <StatusIcon status={status} />
                 </div>
                 <div
                   className="text-[11px] text-muted-foreground truncate"
@@ -63,19 +64,15 @@ export function SessionsList({ sessions, selectedId, onSelect }: SessionsListPro
   )
 }
 
-function StatusDot({ status }: { status?: 'running' | 'stopped' | 'crashed' }) {
-  const color =
-    status === 'running'
-      ? 'bg-emerald-500'
-      : status === 'crashed'
-        ? 'bg-red-500'
-        : 'bg-gray-400/60'
-  const title =
-    status === 'running' ? 'Running' : status === 'crashed' ? 'Crashed' : 'Idle'
-  return (
-    <span
-      title={title}
-      className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', color)}
-    />
-  )
+function StatusIcon({ status }: { status?: 'running' | 'stopped' | 'crashed' }) {
+  if (status === 'crashed') {
+    return <AlertCircle size={13} className="text-red-500 flex-shrink-0" />
+  }
+  if (!status) {
+    return <Loader2 size={13} className="text-muted-foreground animate-spin flex-shrink-0" />
+  }
+  if (status === 'stopped') {
+    return <CircleDashed size={13} className="text-muted-foreground/70 flex-shrink-0" />
+  }
+  return <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" />
 }

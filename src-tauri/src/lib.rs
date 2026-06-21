@@ -566,6 +566,7 @@ pub fn run() {
             delete_provider,
             set_provider_api_key,
             has_provider_api_key,
+            sign_in_provider,
             // Agents
             list_agents,
             get_agent,
@@ -574,11 +575,7 @@ pub fn run() {
             delete_agent,
             // Sessions (read + lifecycle)
             list_sessions,
-            get_session,
             delete_session,
-            update_session_favorite,
-            update_session_visited,
-            rename_session,
             // Messages
             get_messages_by_session,
             // Claude subprocess
@@ -589,6 +586,7 @@ pub fn run() {
             cancel_query,
             clear_session,
             list_running_sessions,
+            respond_to_permission,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

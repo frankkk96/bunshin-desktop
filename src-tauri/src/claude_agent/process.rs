@@ -1,5 +1,6 @@
 use crate::claude_agent::protocol::{
-    build_interrupt, build_user_message, ClaudeStreamEvent,
+    build_control_success, build_initialize, build_interrupt, build_user_message,
+    ClaudeStreamEvent,
 };
 use crate::database::models::{Provider, ProviderType, Session};
 use crate::database::repositories::MessageRepository;
@@ -8,7 +9,7 @@ use serde::Serialize;
 use sqlx::SqlitePool;
 use std::process::Stdio;
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
@@ -19,6 +20,21 @@ pub enum ProcessStatus {
     Running,
     Stopped,
     Crashed,
+}
+
+/// Resolve the per-provider config directory used as `CLAUDE_CONFIG_DIR`.
+/// Creates it on first use so the `claude` CLI can write its OAuth tokens,
+/// settings, etc. without polluting the user's `~/.claude/`.
+pub fn provider_profile_dir(app: &AppHandle, provider_id: &str) -> Result<std::path::PathBuf> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| anyhow!("could not resolve app data dir: {e}"))?
+        .join("claude-profiles")
+        .join(provider_id);
+    std::fs::create_dir_all(&dir)
+        .with_context(|| format!("could not create provider profile dir at {}", dir.display()))?;
+    Ok(dir)
 }
 
 /// One running `claude` subprocess.
@@ -45,7 +61,23 @@ impl ClaudeProcess {
         let session = cfg.session;
         let provider = cfg.provider;
 
+        let profile_dir = provider_profile_dir(&app, &provider.id)?;
+
         let mut cmd = Command::new("claude");
+
+        // Don't let the user's shell `ANTHROPIC_*` / `CLAUDE_*` env leak into the
+        // subprocess — those would silently override per-provider config (e.g. an
+        // exported `ANTHROPIC_API_KEY` would hijack a subscription session).
+        for (k, _) in std::env::vars() {
+            if k.starts_with("ANTHROPIC_") || k.starts_with("CLAUDE_") {
+                cmd.env_remove(&k);
+            }
+        }
+
+        // Each provider gets its own ~/.claude/ — keeps OAuth tokens, settings,
+        // hooks and CLAUDE.md isolated per provider and from the user's terminal.
+        cmd.env("CLAUDE_CONFIG_DIR", &profile_dir);
+
         cmd.arg("-p")
             .arg("--input-format")
             .arg("stream-json")
@@ -69,7 +101,8 @@ impl ClaudeProcess {
 
         match provider.type_ {
             ProviderType::Subscription => {
-                // Trust the system claude CLI's existing OAuth login. Nothing to do.
+                // OAuth lives in `profile_dir/.credentials.json`; user must run
+                // sign-in once per provider (Settings → Provider → Sign in).
             }
             ProviderType::Api => {
                 if let Some(base_url) = provider.base_url.as_deref() {
@@ -82,6 +115,9 @@ impl ClaudeProcess {
         }
 
         cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
+
+        let provider_id_for_exit = provider.id.clone();
+        let provider_type_for_exit = provider.type_;
 
         #[cfg(target_os = "windows")]
         {
@@ -110,6 +146,17 @@ impl ClaudeProcess {
         let status = Arc::new(RwLock::new(ProcessStatus::Running));
         let (stdin_tx, mut stdin_rx) = mpsc::channel::<String>(64);
         let (kill_tx, mut kill_rx) = oneshot::channel::<()>();
+
+        // Open the SDK control channel. Without this handshake the CLI runs in
+        // non-interactive mode and auto-denies any tool that needs permission,
+        // making `can_use_tool` invisible to us. Sending it through stdin_tx
+        // here means it'll be the first line the child reads.
+        let init = build_initialize();
+        let init_line = serde_json::to_string(&init)
+            .context("failed to serialize initialize control_request")?;
+        if stdin_tx.send(init_line).await.is_err() {
+            return Err(anyhow!("subprocess stdin closed before initialize"));
+        }
 
         // Writer task: drain channel into child stdin.
         let session_id_writer = session.id.clone();
@@ -140,6 +187,7 @@ impl ClaudeProcess {
         let session_id_stdout = session.id.clone();
         let pool_stdout = pool.clone();
         let app_stdout = app.clone();
+        let stdin_tx_for_reader = stdin_tx.clone();
         tokio::spawn(async move {
             let repo = MessageRepository::new(pool_stdout);
             let event_topic = format!("session:{}:event", session_id_stdout);
@@ -166,6 +214,52 @@ impl ClaudeProcess {
                         };
                         let kind = parsed.kind().to_string();
                         let payload = parsed.into_payload();
+
+                        // The CLI confirms our `initialize` and `respond_to_permission`
+                        // writes by emitting `control_response` back at us. It's just
+                        // handshake noise — log it but don't clutter the chat history.
+                        if kind == "control_response" {
+                            log::debug!(
+                                "[claude {}] control_response from CLI: {}",
+                                session_id_stdout,
+                                payload,
+                            );
+                            continue;
+                        }
+
+                        // `control_request` covers three subtypes:
+                        //   - can_use_tool         → user must decide; render in UI
+                        //   - hook_callback        → only fires if we register hooks
+                        //                            (we don't, so this is unexpected,
+                        //                            but auto-respond defensively to
+                        //                            avoid deadlocking the subprocess)
+                        //   - mcp_message          → only fires if we host an MCP
+                        //                            server via the SDK (we don't)
+                        if kind == "control_request" {
+                            let subtype = payload
+                                .get("request")
+                                .and_then(|r| r.get("subtype"))
+                                .and_then(|s| s.as_str())
+                                .unwrap_or("");
+                            if subtype == "hook_callback" || subtype == "mcp_message" {
+                                if let Some(req_id) = payload
+                                    .get("request_id")
+                                    .and_then(|v| v.as_str())
+                                {
+                                    let auto = if subtype == "hook_callback" {
+                                        serde_json::json!({ "continue": true })
+                                    } else {
+                                        serde_json::json!({})
+                                    };
+                                    let line = build_control_success(req_id, auto).to_string();
+                                    let _ = stdin_tx_for_reader.send(line).await;
+                                }
+                                continue;
+                            }
+                            // Otherwise (can_use_tool, or any new subtype we don't know):
+                            // fall through to persist + emit so the UI can render it.
+                        }
+
                         match repo.append(&session_id_stdout, &kind, &payload).await {
                             Ok(message) => {
                                 if let Err(e) = app_stdout.emit(&event_topic, &message) {
@@ -237,6 +331,14 @@ impl ClaudeProcess {
             *status_wait.write().await = new_status;
 
             let stderr_tail = stderr_for_wait.lock().await.clone();
+            // Detect "claude needs you to sign in" so the UI can offer a one-click
+            // sign-in button instead of just dumping stderr to the chat.
+            // Subscription providers print "Please run /login" / "Not logged in"
+            // when their OAuth tokens are missing or expired.
+            let needs_login = matches!(provider_type_for_exit, ProviderType::Subscription)
+                && (stderr_tail.contains("Please run /login")
+                    || stderr_tail.contains("Not logged in")
+                    || stderr_tail.contains("Invalid API key"));
             let payload = serde_json::json!({
                 "type": "process_exit",
                 "code": code_opt,
@@ -247,6 +349,8 @@ impl ClaudeProcess {
                     ProcessStatus::Running => "running",
                 },
                 "stderr_tail": stderr_tail,
+                "needs_login": needs_login,
+                "provider_id": provider_id_for_exit,
             });
             let repo = MessageRepository::new(pool_wait);
             if let Ok(message) = repo
@@ -304,6 +408,36 @@ impl ClaudeProcess {
         });
         let stored = repo
             .append(&self.session_id, "local_user", &payload)
+            .await?;
+        let _ = app.emit(&format!("session:{}:event", self.session_id), &stored);
+        Ok(())
+    }
+
+    /// Reply to a pending `control_request` (e.g. tool permission, AskUserQuestion,
+    /// ExitPlanMode). Persists a `local_control_response` mirror so the UI can
+    /// match it to the original request via `request_id` and collapse the card.
+    pub async fn send_control_response(
+        &self,
+        request_id: String,
+        response: serde_json::Value,
+        pool: SqlitePool,
+        app: AppHandle,
+    ) -> Result<()> {
+        let envelope = build_control_success(&request_id, response.clone());
+        let line = envelope.to_string();
+        self.stdin_tx
+            .send(line)
+            .await
+            .map_err(|_| anyhow!("subprocess stdin closed"))?;
+
+        let repo = MessageRepository::new(pool);
+        let mirror = serde_json::json!({
+            "type": "local_control_response",
+            "request_id": request_id,
+            "response": response,
+        });
+        let stored = repo
+            .append(&self.session_id, "local_control_response", &mirror)
             .await?;
         let _ = app.emit(&format!("session:{}:event", self.session_id), &stored);
         Ok(())

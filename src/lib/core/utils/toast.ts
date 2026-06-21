@@ -2,7 +2,7 @@ import { toast as sonnerToast } from 'sonner'
 import { logger } from '@/lib/core/utils/logger'
 
 // Platform-specific toast implementation using Sonner (React library)
-export class Toast {
+class Toast {
   static info(message: string, duration?: number): void {
     sonnerToast.info(message, {
       duration: duration ?? 4000,

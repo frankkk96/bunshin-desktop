@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 import { CrashReporting } from '@/lib/core/crash-reporting'
 import { logger } from '@/lib/core/utils/logger'
 
@@ -164,32 +164,3 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// 高阶组件包装器
-export function withErrorBoundary<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  fallback?: ReactNode,
-  onError?: (error: Error, errorInfo: ErrorInfo) => void,
-) {
-  const WithErrorBoundaryComponent = (props: P) => {
-    return (
-      <ErrorBoundary fallback={fallback} onError={onError}>
-        <WrappedComponent {...props} />
-      </ErrorBoundary>
-    )
-  }
-
-  WithErrorBoundaryComponent.displayName = `withErrorBoundary(${
-    WrappedComponent.displayName || WrappedComponent.name
-  })`
-
-  return WithErrorBoundaryComponent
-}
-
-// 便捷的hook用于在函数组件中报告错误
-export function useErrorReporting() {
-  const reportError = React.useCallback((error: Error, metadata?: any) => {
-    CrashReporting.captureError(error, metadata)
-  }, [])
-
-  return { reportError }
-}

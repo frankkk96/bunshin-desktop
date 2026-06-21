@@ -149,7 +149,7 @@ class SimpleCrashReporting {
 // 单例实例
 let crashReportingInstance: SimpleCrashReporting | null = null
 
-export function getCrashReporting(): SimpleCrashReporting {
+function getCrashReporting(): SimpleCrashReporting {
   if (!crashReportingInstance) {
     crashReportingInstance = new SimpleCrashReporting()
   }

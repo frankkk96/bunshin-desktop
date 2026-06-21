@@ -1,4 +1,5 @@
 use crate::claude_agent::manager::{ClaudeSessionManager, RunningSessionInfo};
+use crate::claude_agent::process::provider_profile_dir;
 use crate::database::models::{PermissionMode, ProviderType, Session};
 use crate::database::repositories::{
     AgentRepository, MessageRepository, ProviderRepository, SessionRepository,
@@ -233,6 +234,35 @@ pub async fn cancel_query(
     process.cancel().await.map_err(|e| e.to_string())
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RespondToPermissionInput {
+    pub session_id: String,
+    pub request_id: String,
+    /// Inner `response` value from the SDK control protocol.
+    /// For can_use_tool: `{behavior:"allow", updatedInput:{...}, updatedPermissions:[...]}`
+    /// or `{behavior:"deny", message:"...", interrupt:false}`.
+    pub response: serde_json::Value,
+}
+
+/// Send the user's decision for a pending `can_use_tool` (or other) control_request
+/// back to the claude subprocess via stdin, and mirror it into the message log.
+#[tauri::command]
+pub async fn respond_to_permission(
+    input: RespondToPermissionInput,
+    state: State<'_, AppState>,
+    manager: State<'_, Arc<ClaudeSessionManager>>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let process = manager
+        .get(&input.session_id)
+        .ok_or_else(|| format!("session {} is not running", input.session_id))?;
+    process
+        .send_control_response(input.request_id, input.response, state.db_pool.clone(), app)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// /clear: kill the subprocess, drop persisted messages, rotate the underlying
 /// claude session UUID, and respawn so the conversation starts truly empty.
 #[tauri::command]
@@ -324,3 +354,90 @@ pub async fn set_provider_api_key(
 pub async fn has_provider_api_key(provider_id: String, app: AppHandle) -> Result<bool, String> {
     Ok(load_provider_api_key(&app, &provider_id)?.is_some())
 }
+
+/// Open a terminal window running `claude /login` against the provider's
+/// isolated `CLAUDE_CONFIG_DIR`. Subscription providers need this once per
+/// provider so OAuth tokens land in the right profile dir.
+#[tauri::command]
+pub async fn sign_in_provider(
+    provider_id: String,
+    state: State<'_, AppState>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let provider = ProviderRepository::new(state.db_pool.clone())
+        .get(&provider_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("provider {} not found", provider_id))?;
+
+    if !matches!(provider.type_, ProviderType::Subscription) {
+        return Err("Sign-in only applies to subscription providers".into());
+    }
+
+    let profile_dir = provider_profile_dir(&app, &provider.id).map_err(|e| e.to_string())?;
+    open_login_terminal(&profile_dir).map_err(|e| e.to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn open_login_terminal(profile_dir: &Path) -> Result<(), String> {
+    // Escape both backslashes and double quotes for the AppleScript string.
+    let dir_quoted = profile_dir
+        .display()
+        .to_string()
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"");
+    let script = format!(
+        "tell application \"Terminal\" to do script \"export CLAUDE_CONFIG_DIR=\\\"{}\\\"; claude /login\"",
+        dir_quoted
+    );
+    std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .arg("-e")
+        .arg("tell application \"Terminal\" to activate")
+        .spawn()
+        .map_err(|e| format!("could not open Terminal: {e}"))?;
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn open_login_terminal(profile_dir: &Path) -> Result<(), String> {
+    let cmdline = format!(
+        "set CLAUDE_CONFIG_DIR={} && claude /login && pause",
+        profile_dir.display()
+    );
+    std::process::Command::new("cmd.exe")
+        .args(["/C", "start", "", "cmd.exe", "/K", &cmdline])
+        .spawn()
+        .map_err(|e| format!("could not open cmd.exe: {e}"))?;
+    Ok(())
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_login_terminal(profile_dir: &Path) -> Result<(), String> {
+    let dir_str = profile_dir.display().to_string();
+    let inner = format!(
+        "export CLAUDE_CONFIG_DIR=\"{}\"; claude /login; echo; read -p 'Press enter to close…'",
+        dir_str
+    );
+    let candidates: &[(&str, &[&str])] = &[
+        ("x-terminal-emulator", &["-e", "bash", "-c"]),
+        ("gnome-terminal", &["--", "bash", "-c"]),
+        ("konsole", &["-e", "bash", "-c"]),
+        ("xterm", &["-e", "bash", "-c"]),
+    ];
+    let mut last_err: Option<String> = None;
+    for (term, args) in candidates {
+        let mut cmd = std::process::Command::new(term);
+        cmd.args(*args).arg(&inner);
+        match cmd.spawn() {
+            Ok(_) => return Ok(()),
+            Err(e) => last_err = Some(format!("{term}: {e}")),
+        }
+    }
+    Err(format!(
+        "no supported terminal emulator found ({})",
+        last_err.unwrap_or_else(|| "tried x-terminal-emulator, gnome-terminal, konsole, xterm".into())
+    ))
+}
+

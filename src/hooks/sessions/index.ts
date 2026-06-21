@@ -8,14 +8,6 @@ export function useSessions() {
   return useQuery({ queryKey: KEY, queryFn: sessionsApi.list })
 }
 
-export function useSession(id: string | undefined) {
-  return useQuery({
-    queryKey: [...KEY, id],
-    queryFn: () => sessionsApi.get(id!),
-    enabled: !!id,
-  })
-}
-
 export function useSessionMessages(id: string | undefined) {
   return useQuery({
     queryKey: [...KEY, id, 'messages'],
@@ -79,6 +71,12 @@ export function useCancelQuery() {
   })
 }
 
+export function useRespondToPermission() {
+  return useMutation({
+    mutationFn: sessionsApi.respondToPermission,
+  })
+}
+
 export function useClearSession() {
   const qc = useQueryClient()
   return useMutation({
@@ -90,20 +88,3 @@ export function useClearSession() {
   })
 }
 
-export function useRenameSession() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string | null }) =>
-      sessionsApi.rename(id, name),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
-  })
-}
-
-export function useSetSessionFavorite() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, favorite }: { id: string; favorite: boolean }) =>
-      sessionsApi.setFavorite(id, favorite),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
-  })
-}

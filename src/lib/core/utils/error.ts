@@ -90,37 +90,7 @@ type SimpleErrorOptions = {
   metadata?: Record<string, any> // 额外的调试信息
 }
 
-export function handleFileError(error: unknown, options: SimpleErrorOptions = {}) {
-  const message = options.message || normalizeError(error) || 'File operation failed'
-  logAndToast(message, options)
-}
-
-export function handleNetworkError(error: unknown, options: SimpleErrorOptions = {}) {
-  const message = options.message || normalizeError(error) || 'Network request failed'
-  logAndToast(message, options)
-}
-
-export function handleApiError(error: unknown, options: SimpleErrorOptions = {}) {
-  const message = options.message || normalizeError(error) || 'API request failed'
-  logAndToast(message, options)
-}
-
-export function handleDatabaseError(error: unknown, options: SimpleErrorOptions = {}) {
-  const message = options.message || normalizeError(error) || 'Database operation failed'
-  logAndToast(message, options)
-}
-
-export function handleAuthError(error: unknown, options: SimpleErrorOptions = {}) {
-  const message = options.message || normalizeError(error) || 'Authentication failed'
-  logAndToast(message, options)
-}
-
 export function handleRuntimeError(error: unknown, options: SimpleErrorOptions = {}) {
   const message = options.message || normalizeError(error) || 'Runtime error occurred'
-  logAndToast(message, options)
-}
-
-export function handleInitializationError(error: unknown, options: SimpleErrorOptions = {}) {
-  const message = options.message || normalizeError(error) || 'Initialization failed'
   logAndToast(message, options)
 }

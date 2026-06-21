@@ -71,7 +71,8 @@ export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalPro
       <MacOSSheetHeader>
         <MacOSSheetTitle>New Agent</MacOSSheetTitle>
         <MacOSSheetDescription>
-          Pick a provider once — it can not be changed later.
+          The provider (and therefore the model) is locked once the agent is
+          created. Create another agent to use a different provider.
         </MacOSSheetDescription>
       </MacOSSheetHeader>
       <MacOSSheetContent className="px-6 py-5">
