@@ -99,6 +99,7 @@ impl DatabaseConnection {
                 description TEXT,
                 avatar TEXT,
                 provider_id TEXT NOT NULL REFERENCES providers(id) ON DELETE RESTRICT,
+                config TEXT NOT NULL DEFAULT '{}',
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL
             )
@@ -110,6 +111,12 @@ impl DatabaseConnection {
         // Drop the legacy `pinned` column from existing installs (best-effort:
         // SQLite ignores the error if the column was never present).
         let _ = sqlx::query("ALTER TABLE agents DROP COLUMN pinned")
+            .execute(&self.pool)
+            .await;
+
+        // For installs created before the per-agent Claude Code config column:
+        // best-effort add it; existing rows get an empty `{}` (claude defaults).
+        let _ = sqlx::query("ALTER TABLE agents ADD COLUMN config TEXT NOT NULL DEFAULT '{}'")
             .execute(&self.pool)
             .await;
 

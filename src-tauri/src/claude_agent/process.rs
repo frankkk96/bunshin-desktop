@@ -2,7 +2,7 @@ use crate::claude_agent::protocol::{
     build_control_success, build_initialize, build_interrupt, build_user_message,
     ClaudeStreamEvent,
 };
-use crate::database::models::{Provider, ProviderType, Session};
+use crate::database::models::{AgentConfig, Provider, ProviderType, Session};
 use crate::database::repositories::MessageRepository;
 use anyhow::{anyhow, Context, Result};
 use serde::Serialize;
@@ -48,8 +48,117 @@ pub struct ClaudeProcess {
 pub struct SpawnConfig<'a> {
     pub session: &'a Session,
     pub provider: &'a Provider,
+    pub config: &'a AgentConfig,
     pub api_key: Option<&'a str>,
     pub resume: bool,
+}
+
+/// Translate an `AgentConfig` into `claude` CLI flags + a merged `--settings`
+/// JSON blob. Anything left at default contributes nothing, so a blank config
+/// reproduces the previous fixed command line exactly.
+fn apply_agent_config(cmd: &mut Command, config: &AgentConfig) {
+    if let Some(model) = config.model.as_deref().filter(|s| !s.trim().is_empty()) {
+        cmd.arg("--model").arg(model);
+    }
+    if let Some(effort) = config.effort.as_deref().filter(|s| !s.trim().is_empty()) {
+        cmd.arg("--effort").arg(effort);
+    }
+    if let Some(fb) = config
+        .fallback_model
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+    {
+        cmd.arg("--fallback-model").arg(fb);
+    }
+    if let Some(prompt) = config
+        .append_system_prompt
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+    {
+        cmd.arg("--append-system-prompt").arg(prompt);
+    }
+
+    // Disabled built-in tools → a single comma-separated --disallowedTools arg
+    // (bare tool names remove them from the session, e.g. WebSearch, WebFetch).
+    let disabled: Vec<&str> = config
+        .disabled_tools
+        .iter()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
+    if !disabled.is_empty() {
+        cmd.arg("--disallowedTools").arg(disabled.join(","));
+    }
+
+    // Raw MCP server config → --mcp-config (inline JSON string accepted).
+    if let Some(mcp) = config.mcp_config.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        cmd.arg("--mcp-config").arg(mcp);
+    }
+
+    // Build the merged settings.json object from the structured knobs, then let
+    // the raw `extra_settings` fragment override anything on top.
+    let mut settings = serde_json::Map::new();
+
+    let mut permissions = serde_json::Map::new();
+    let rule_list = |rules: &[String]| -> Vec<serde_json::Value> {
+        rules
+            .iter()
+            .map(|r| r.trim())
+            .filter(|r| !r.is_empty())
+            .map(|r| serde_json::Value::String(r.to_string()))
+            .collect()
+    };
+    let allow = rule_list(&config.permission_allow);
+    let deny = rule_list(&config.permission_deny);
+    let ask = rule_list(&config.permission_ask);
+    if !allow.is_empty() {
+        permissions.insert("allow".into(), allow.into());
+    }
+    if !deny.is_empty() {
+        permissions.insert("deny".into(), deny.into());
+    }
+    if !ask.is_empty() {
+        permissions.insert("ask".into(), ask.into());
+    }
+    if !permissions.is_empty() {
+        settings.insert("permissions".into(), permissions.into());
+    }
+
+    if let Some(co) = config.include_co_authored_by {
+        settings.insert("includeCoAuthoredBy".into(), co.into());
+    }
+
+    let mut env = serde_json::Map::new();
+    for var in &config.env {
+        let key = var.key.trim();
+        if !key.is_empty() {
+            env.insert(key.to_string(), serde_json::Value::String(var.value.clone()));
+        }
+    }
+    if !env.is_empty() {
+        settings.insert("env".into(), env.into());
+    }
+
+    if let Some(raw) = config.extra_settings.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        match serde_json::from_str::<serde_json::Value>(raw) {
+            Ok(serde_json::Value::Object(extra)) => {
+                for (k, v) in extra {
+                    settings.insert(k, v);
+                }
+            }
+            Ok(_) => log::warn!("agent extra_settings is not a JSON object; ignoring"),
+            Err(e) => log::warn!("agent extra_settings is not valid JSON ({e}); ignoring"),
+        }
+    }
+
+    if !settings.is_empty() {
+        match serde_json::to_string(&serde_json::Value::Object(settings)) {
+            Ok(json) => {
+                cmd.arg("--settings").arg(json);
+            }
+            Err(e) => log::warn!("failed to serialize merged --settings ({e}); skipping"),
+        }
+    }
 }
 
 impl ClaudeProcess {
@@ -96,6 +205,10 @@ impl ClaudeProcess {
             .arg(&session.cwd)
             .arg("--permission-mode")
             .arg(session.permission_mode.as_cli_flag());
+
+        // Per-agent Claude Code configuration (model, effort, system prompt,
+        // disabled tools, permissions, env, MCP, raw settings overrides).
+        apply_agent_config(&mut cmd, cfg.config);
 
         cmd.current_dir(&session.cwd);
 

@@ -117,6 +117,7 @@ pub async fn start_session(
     let manager_clone = manager.inner().clone();
     let session_clone = session.clone();
     let provider_clone = provider.clone();
+    let config_clone = agent.config.clone();
     let api_key_owned = api_key.map(|s| s.to_string());
     let pool_clone = state.db_pool.clone();
     let app_clone = app.clone();
@@ -125,6 +126,7 @@ pub async fn start_session(
             .start(
                 &session_clone,
                 &provider_clone,
+                &config_clone,
                 api_key_owned.as_deref(),
                 false,
                 pool_clone,
@@ -184,6 +186,7 @@ pub async fn resume_session(
         .start(
             &session,
             &provider,
+            &agent.config,
             api_key.as_deref(),
             true,
             state.db_pool.clone(),
@@ -318,6 +321,7 @@ pub async fn clear_session(
         .start(
             &session,
             &provider,
+            &agent.config,
             api_key.as_deref(),
             false,
             state.db_pool.clone(),

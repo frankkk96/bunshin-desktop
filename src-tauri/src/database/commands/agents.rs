@@ -1,4 +1,4 @@
-use crate::database::models::Agent;
+use crate::database::models::{Agent, AgentConfig};
 use crate::database::repositories::{AgentRepository, ProviderRepository};
 use crate::database::AppState;
 use serde::Deserialize;
@@ -11,6 +11,8 @@ pub struct CreateAgentInput {
     pub description: Option<String>,
     pub avatar: Option<String>,
     pub provider_id: String,
+    #[serde(default)]
+    pub config: Option<AgentConfig>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -20,6 +22,8 @@ pub struct UpdateAgentInput {
     pub alias: String,
     pub description: Option<String>,
     pub avatar: Option<String>,
+    #[serde(default)]
+    pub config: Option<AgentConfig>,
 }
 
 #[tauri::command]
@@ -56,6 +60,7 @@ pub async fn create_agent(
         description: input.description,
         avatar: input.avatar,
         provider_id: input.provider_id,
+        config: input.config.unwrap_or_default(),
         created_at: now,
         updated_at: now,
     };
@@ -81,6 +86,8 @@ pub async fn update_agent(
         description: input.description,
         avatar: input.avatar,
         provider_id: existing.provider_id,
+        // Omitting config in the payload preserves what's stored.
+        config: input.config.unwrap_or(existing.config),
         created_at: existing.created_at,
         updated_at: now,
     };

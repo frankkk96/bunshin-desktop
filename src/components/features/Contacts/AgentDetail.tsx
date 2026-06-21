@@ -10,6 +10,7 @@ import {
   EditableName,
 } from '@/components/common'
 import { MacOSButton, MacOSSeparator } from '@/components/ui'
+import { AgentConfigSection } from './AgentConfigSection'
 import { useAgents, useDeleteAgent, useUpdateAgent } from '@/hooks/agents'
 import { useProvider } from '@/hooks/providers'
 import { toast } from '@/lib/core/utils/toast'
@@ -206,6 +207,10 @@ export function AgentDetail({ agent }: AgentDetailProps) {
           />
         </div>
       </div>
+
+      <MacOSSeparator className="mt-8 mb-6 bg-border opacity-30" />
+
+      <AgentConfigSection agent={agent} />
 
       <div className="mt-10">
         <DeleteButton
