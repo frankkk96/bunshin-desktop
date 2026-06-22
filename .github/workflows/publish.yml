@@ -102,16 +102,21 @@ jobs:
           chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
           echo "Wrote ASC key to $HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
 
-      # Bundle Claude Code: place both per-arch sidecars (checksum-verified). The
-      # universal Tauri build compiles each arch separately and lipos the sidecars
-      # into the universal app itself, so it needs both files present by triple.
-      - name: Bundle Claude Code (per-arch sidecars)
+      # Bundle Claude Code for the universal macOS build. Tauri needs all three:
+      # the two per-arch sidecars (for the per-arch compiles) AND a pre-lipo'd
+      # universal one (for the final universal bundle copy). All checksum-verified.
+      - name: Bundle Claude Code (macOS sidecars)
         working-directory: ${{ env.APP_DIR }}
         shell: bash
         run: |
           set -euo pipefail
           node scripts/fetch-claude.mjs --platform darwin-arm64
           node scripts/fetch-claude.mjs --platform darwin-x64
+          lipo -create \
+            src-tauri/binaries/claude-aarch64-apple-darwin \
+            src-tauri/binaries/claude-x86_64-apple-darwin \
+            -output src-tauri/binaries/claude-universal-apple-darwin
+          chmod +x src-tauri/binaries/claude-universal-apple-darwin
           ls -lh src-tauri/binaries/
 
       # Build & upload (includes updater JSON)
