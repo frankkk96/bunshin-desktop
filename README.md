@@ -25,6 +25,17 @@ npm run tauri dev  # run in development
 npm run tauri build  # production build
 ```
 
+### Bundled Claude Code
+
+The Claude Code binary ships **inside** the app as a Tauri sidecar, so end users
+never install anything. The pinned version lives in
+[`src-tauri/claude-code-version`](src-tauri/claude-code-version); `npm run tauri dev`
+and `tauri build` auto-download the matching binary for your platform on first run
+(~210 MB, checksum-verified, cached under `src-tauri/binaries/`, which is gitignored).
+Run it manually with `npm run fetch:claude`. To upgrade Claude Code, bump that
+version file and cut a new Bunshin release. The macOS release build is universal
+(arm64 + x86_64 combined via `lipo`).
+
 ## Releases
 
 Pushing a `v*` tag runs the [`publish`](.github/workflows/publish.yml) workflow, which

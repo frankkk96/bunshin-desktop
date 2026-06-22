@@ -37,6 +37,30 @@ pub fn agent_profile_dir(app: &AppHandle, agent_id: &str) -> Result<std::path::P
     Ok(dir)
 }
 
+/// Resolve the `claude` executable to run.
+///
+/// In a packaged build the Claude Code binary ships *inside* the app as a Tauri
+/// sidecar (`externalBin`), copied next to the main executable — so it works
+/// with zero user setup and no network access. In development that sidecar is
+/// usually absent, so we fall back to a `claude` found on `PATH`.
+fn resolve_claude_binary() -> std::path::PathBuf {
+    let exe_name = if cfg!(target_os = "windows") {
+        "claude.exe"
+    } else {
+        "claude"
+    };
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let bundled = dir.join(exe_name);
+            if bundled.exists() {
+                return bundled;
+            }
+        }
+    }
+    // Dev fallback: rely on PATH.
+    std::path::PathBuf::from("claude")
+}
+
 /// One running `claude` subprocess.
 pub struct ClaudeProcess {
     pub session_id: String,
@@ -171,7 +195,7 @@ impl ClaudeProcess {
 
         let profile_dir = agent_profile_dir(&app, &agent.id)?;
 
-        let mut cmd = Command::new("claude");
+        let mut cmd = Command::new(resolve_claude_binary());
 
         // Don't let the user's shell `ANTHROPIC_*` / `CLAUDE_*` env leak into the
         // subprocess — those would silently override per-provider config (e.g. an
@@ -231,7 +255,7 @@ impl ClaudeProcess {
 
         let mut child = cmd
             .spawn()
-            .context("failed to spawn `claude` subprocess — is the CLI installed and on PATH?")?;
+            .context("failed to spawn the bundled `claude` binary (and no `claude` on PATH as a dev fallback)")?;
 
         let stdin = child
             .stdin

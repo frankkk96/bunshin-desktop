@@ -4,9 +4,9 @@
   "version": "0.5.2",
   "identifier": "app.bunshin",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run fetch:claude && npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "npm run fetch:claude && npm run build",
     "frontendDist": "../dist"
   },
   "plugins": {
@@ -55,9 +55,10 @@
     "targets": "all",
     "createUpdaterArtifacts": true,
     "resources": ["config/models/*"],
+    "externalBin": ["binaries/claude"],
     "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
     "macOS": {
-      "entitlements": null,
+      "entitlements": "entitlements.plist",
       "exceptionDomain": "",
       "frameworks": [],
       "minimumSystemVersion": "10.15",

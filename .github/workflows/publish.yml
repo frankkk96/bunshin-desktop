@@ -102,6 +102,21 @@ jobs:
           chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
           echo "Wrote ASC key to $HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
 
+      # Bundle Claude Code: download both arches (checksum-verified) and lipo them
+      # into a universal sidecar so the app ships Claude Code with zero user setup.
+      - name: Bundle Claude Code (universal)
+        working-directory: ${{ env.APP_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/fetch-claude.mjs --platform darwin-arm64 --out "$RUNNER_TEMP/claude-arm64"
+          node scripts/fetch-claude.mjs --platform darwin-x64  --out "$RUNNER_TEMP/claude-x64"
+          mkdir -p src-tauri/binaries
+          lipo -create "$RUNNER_TEMP/claude-arm64" "$RUNNER_TEMP/claude-x64" \
+            -output src-tauri/binaries/claude-universal-apple-darwin
+          chmod +x src-tauri/binaries/claude-universal-apple-darwin
+          file src-tauri/binaries/claude-universal-apple-darwin
+
       # Build & upload (includes updater JSON)
       - name: Build & upload (macOS)
         uses: tauri-apps/tauri-action@v0
@@ -114,6 +129,8 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           LIBLZMA_STATIC: "1"
           XZ2_STATIC: "1"
+          # The sidecar is already in place (step above); don't re-fetch in beforeBuild.
+          BUNSHIN_SKIP_CLAUDE_FETCH: "1"
         with:
           projectPath: ${{ env.APP_DIR }}
           # 不传 releaseId → 仅构建、不上传，由后续步骤完成 notarize & 上传
@@ -234,11 +251,21 @@ jobs:
         with:
           workspaces: '${{ env.APP_DIR }}/src-tauri -> target'
 
+      # Bundle Claude Code: download the checksum-verified Windows binary as a
+      # sidecar so the app ships Claude Code with zero user setup.
+      - name: Bundle Claude Code (Windows x64)
+        working-directory: ${{ env.APP_DIR }}
+        shell: pwsh
+        run: |
+          node scripts/fetch-claude.mjs --platform win32-x64 --out src-tauri/binaries/claude-x86_64-pc-windows-msvc.exe
+
       - name: Build & upload (Windows)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # The sidecar is already in place (step above); don't re-fetch in beforeBuild.
+          BUNSHIN_SKIP_CLAUDE_FETCH: "1"
         with:
           projectPath: ${{ env.APP_DIR }}
           releaseId: ${{ needs.create-release.outputs.release_id }}
