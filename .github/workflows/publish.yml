@@ -12,9 +12,11 @@ permissions:
 env:
   APP_DIR: .
   ICON_SRC: public/icon.png
-  RELEASE_REPO: frankkk96/Bunshin-Release
+  # Releases are published to this same repository, so the built-in GITHUB_TOKEN
+  # is sufficient — no cross-repo PAT required.
+  RELEASE_REPO: frankkk96/bunshin-desktop
   RELEASE_OWNER: frankkk96
-  RELEASE_REPO_NAME: Bunshin-Release
+  RELEASE_REPO_NAME: bunshin-desktop
 
 jobs:
   # 1) Create GitHub release (draft=false, prerelease=false)
@@ -25,26 +27,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Preflight: fail loudly if RELEASE_TOKEN didn't reach this run. An empty
-      # token makes action-gh-release silently fall back to the default Actions
-      # token, which can't write cross-repo → "Resource not accessible by integration".
-      - name: Check RELEASE_TOKEN is present
-        env:
-          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: |
-          if [ -z "${RELEASE_TOKEN}" ]; then
-            echo "::error::RELEASE_TOKEN is EMPTY/not injected into this run. Check it's a Repository secret named RELEASE_TOKEN in frankkk96/bunshin-desktop (Settings → Secrets and variables → Actions → Secrets)."
-            exit 1
-          fi
-          echo "RELEASE_TOKEN present (length=${#RELEASE_TOKEN})."
-
       - name: Create GitHub release
         id: create
         uses: softprops/action-gh-release@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ env.RELEASE_REPO }}
           tag_name: ${{ github.ref_name }}
           name: Bunshin ${{ github.ref_name }}
@@ -117,7 +106,7 @@ jobs:
       - name: Build & upload (macOS)
         uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -164,7 +153,7 @@ jobs:
       - name: Upload notarized artifacts
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
@@ -248,7 +237,7 @@ jobs:
       - name: Build & upload (Windows)
         uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           projectPath: ${{ env.APP_DIR }}
@@ -291,7 +280,7 @@ jobs:
       - name: Upload version-less Windows alias
         shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
           $ErrorActionPreference = 'Stop'
@@ -310,7 +299,7 @@ jobs:
     steps:
       - name: Build & upload latest.json
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
           NOTES: ${{ github.event.head_commit.message }}
           DARWIN_URL: ${{ needs.build-macos.outputs.darwin_url }}

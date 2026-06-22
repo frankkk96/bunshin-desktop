@@ -54,7 +54,7 @@ export function GeneralSection() {
 
   const handleFeedbackClick = async () => {
     try {
-      await openUrl('https://github.com/frankkk96/Bunshin-Release/issues')
+      await openUrl('https://github.com/frankkk96/bunshin-desktop/issues')
     } catch (error) {
       console.error('Failed to open feedback URL:', error)
     }
