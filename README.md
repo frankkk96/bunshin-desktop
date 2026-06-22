@@ -7,6 +7,8 @@ at a folder, and let it work. No command line, no setup ceremony.
 
 [**Download for macOS**](https://github.com/frankkk96/bunshin-desktop/releases/latest/download/Bunshin-macOS.dmg) · [**Download for Windows**](https://github.com/frankkk96/bunshin-desktop/releases/latest/download/Bunshin-Windows-setup.exe) — free, bring your own API keys
 
+![Bunshin — an agent scoped to a folder, running a Claude Code session](assets/demo.jpg)
+
 ## Features
 
 - **Scoped to your code** — every agent pairs a working directory with a model.
