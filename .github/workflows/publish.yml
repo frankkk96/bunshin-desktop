@@ -175,6 +175,10 @@ jobs:
           echo "Uploading DMG: $DMG"
           gh release upload "$TAG_NAME" "$DMG" --clobber --repo "${{ env.RELEASE_REPO }}"
           if [ -f "$SIG_DMG" ]; then gh release upload "$TAG_NAME" "$SIG_DMG" --clobber --repo "${{ env.RELEASE_REPO }}"; fi
+          # Version-less alias so the landing page can link to a permanent URL:
+          # https://github.com/<repo>/releases/latest/download/Bunshin-macOS.dmg
+          cp "$DMG" "Bunshin-macOS.dmg"
+          gh release upload "$TAG_NAME" "Bunshin-macOS.dmg" --clobber --repo "${{ env.RELEASE_REPO }}"
           if [ -n "$APP_TAR" ]; then
             echo "Uploading TAR: $APP_TAR"
             gh release upload "$TAG_NAME" "$APP_TAR" --clobber --repo "${{ env.RELEASE_REPO }}"
@@ -281,6 +285,20 @@ jobs:
           }
           echo "windows_url=$WIN_URL" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           echo "windows_sig=$WIN_SIG" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      # Version-less alias so the landing page can link to a permanent URL:
+      # https://github.com/<repo>/releases/latest/download/Bunshin-Windows-setup.exe
+      - name: Upload version-less Windows alias
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $artifact = Get-ChildItem -Path src-tauri/target -Recurse -Filter *-setup.exe | Where-Object { $_.Name -notlike '*.sig' } | Select-Object -First 1
+          if (-not $artifact) { Write-Error 'No *-setup.exe found for alias upload' }
+          Copy-Item $artifact.FullName 'Bunshin-Windows-setup.exe' -Force
+          gh release upload "$env:TAG_NAME" 'Bunshin-Windows-setup.exe' --clobber --repo "${{ env.RELEASE_REPO }}"
 
   # 4) Publish the static updater manifest (latest.json) to the release.
   #    Serverless auto-update: the app polls
