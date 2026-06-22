@@ -1,19 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Copy, Loader2, Trash2 } from 'lucide-react'
-import { invoke } from '@tauri-apps/api/core'
+import { Copy, Trash2 } from 'lucide-react'
 import {
   Button,
   Input,
-  Label,
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui'
-import { AgentAvatar } from '@/components/common'
 import { AgentConfigSection } from './AgentConfigSection'
-import { PERMISSION_MODES, ProviderGuideLink } from './AgentCreationModal'
+import { DirPickerButton, ProviderGuideLink } from './AgentCreationModal'
+import { FieldRow, SectionHeader } from './FieldRow'
 import {
   useAgentApiKey,
   useDeleteAgent,
@@ -25,15 +23,6 @@ import { pickDirectory } from '@/lib/tauri/service/sessions'
 import { useT } from '@/lib/i18n'
 import { toast } from '@/lib/core/utils/toast'
 import type { Agent, PermissionMode } from '@/lib/types'
-
-interface MediaPickerResult {
-  media: { localPath: string; name: string; type: string; mimeType: string } | null
-  cancelled: boolean
-  error: string | null
-}
-
-const inputCls =
-  'w-full h-8 px-3 text-sm rounded-md border bg-muted text-foreground placeholder:text-muted-foreground/60 outline-none border-border focus:ring-1 focus:ring-ring'
 
 export function AgentEditor({
   agent,
@@ -55,7 +44,6 @@ export function AgentEditor({
   const [baseUrl, setBaseUrl] = useState(agent.baseUrl ?? '')
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(agent.config?.model ?? '')
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const lastSavedName = useRef(agent.alias)
   const lastSavedBaseUrl = useRef(agent.baseUrl ?? '')
   const lastSavedKey = useRef('')
@@ -136,14 +124,6 @@ export function AgentEditor({
     }
   }
 
-  const handlePermissionChange = async (mode: PermissionMode) => {
-    try {
-      await persist({ permissionMode: mode })
-    } catch (err) {
-      toast.error(`Failed to set permission mode: ${err}`)
-    }
-  }
-
   const handleApiKeyBlur = async () => {
     const trimmed = apiKey.trim()
     if (trimmed === lastSavedKey.current) return
@@ -176,29 +156,6 @@ export function AgentEditor({
     }
   }
 
-  const handleAvatarClick = async () => {
-    setUploadingAvatar(true)
-    try {
-      const result = await invoke<MediaPickerResult>('select_media_from_library', {
-        mediaTypes: ['image'],
-      })
-      if (result.cancelled || !result.media) return
-      await updateAgent.mutateAsync({
-        id: agent.id,
-        alias: agent.alias,
-        description: agent.description,
-        avatar: result.media.localPath,
-        baseUrl: agent.baseUrl,
-        cwd: agent.cwd,
-        permissionMode: agent.permissionMode,
-      })
-    } catch (err) {
-      toast.error(`Failed to update avatar: ${err}`)
-    } finally {
-      setUploadingAvatar(false)
-    }
-  }
-
   const handleDuplicate = async () => {
     try {
       await duplicateAgent.mutateAsync(agent.id)
@@ -221,94 +178,66 @@ export function AgentEditor({
   }
 
   return (
-    <Sheet isOpen onClose={onClose} maxWidth="560px" height="680px">
+    <Sheet isOpen onClose={onClose} maxWidth="560px" height="520px">
       <SheetHeader>
         <SheetTitle>{t('agent.edit')}</SheetTitle>
         <SheetDescription>{t('agent.editDesc')}</SheetDescription>
-        <div className="mt-1.5">
-          <ProviderGuideLink t={t} />
-        </div>
       </SheetHeader>
-      <SheetContent className="px-6 py-5">
-        <div className="flex gap-4 items-center mb-6">
-          <button
-            onClick={handleAvatarClick}
-            disabled={uploadingAvatar}
-            className="relative group flex-shrink-0 outline-none rounded-2xl"
-            title={t('agent.changeAvatar')}
-          >
-            <AgentAvatar agent={agent} size={64} />
-            <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              {uploadingAvatar ? (
-                <Loader2 size={16} className="text-white animate-spin" />
-              ) : (
-                <Camera size={16} className="text-white" />
-              )}
-            </div>
-          </button>
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <Label>{t('agent.name')}</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={handleNameBlur} />
+      <SheetContent className="px-6 py-5 space-y-6">
+        {/* Basics: name · workspace */}
+        <div>
+          <SectionHeader title={t('agent.secBasics')} />
+          <div className="space-y-3">
+            <FieldRow label={t('agent.name')}>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={handleNameBlur}
+              />
+            </FieldRow>
+            <FieldRow label={t('agent.cwd')}>
+              <div className="flex gap-2">
+                <Input value={cwd} readOnly className="font-mono text-xs" />
+                <DirPickerButton onClick={handlePickDir} title={t('common.browse')} />
+              </div>
+            </FieldRow>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>{t('agent.cwd')}</Label>
-            <div className="flex gap-2">
-              <Input value={cwd} readOnly className="font-mono text-xs" />
-              <Button variant="outline" onClick={handlePickDir} className="flex-shrink-0">
-                {t('common.browse')}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{t('agent.baseUrl')}</Label>
-            <Input
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              onBlur={handleBaseUrlBlur}
-              placeholder="https://api.anthropic.com"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t('agent.apiKey')}</Label>
-            <Input
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              onBlur={handleApiKeyBlur}
-              placeholder="sk-…"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t('agent.model')}</Label>
-            <Input
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              onBlur={handleModelBlur}
-              placeholder="claude-opus-4-8"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t('agent.permission')}</Label>
-            <select
-              value={agent.permissionMode}
-              onChange={(e) => handlePermissionChange(e.target.value as PermissionMode)}
-              className={inputCls}
-            >
-              {PERMISSION_MODES.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {t(m.key)}
-                </option>
-              ))}
-            </select>
+        {/* Provider: base URL · API key · model */}
+        <div>
+          <SectionHeader title={t('agent.secProvider')} right={<ProviderGuideLink t={t} />} />
+          <div className="space-y-3">
+            <FieldRow label={t('agent.baseUrl')}>
+              <Input
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                onBlur={handleBaseUrlBlur}
+                placeholder="https://api.anthropic.com"
+              />
+            </FieldRow>
+            <FieldRow label={t('agent.apiKey')}>
+              <Input
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                onBlur={handleApiKeyBlur}
+                placeholder="sk-…"
+              />
+            </FieldRow>
+            <FieldRow label={t('agent.model')}>
+              <Input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                onBlur={handleModelBlur}
+                placeholder="claude-opus-4-8"
+              />
+            </FieldRow>
           </div>
         </div>
 
         <AgentConfigSection agent={agent} />
 
-        <div className="mt-8 pt-4 border-t border-border/40 flex items-center gap-2">
+        <div className="pt-4 border-t border-border/40 flex items-center gap-2">
           <Button variant="outline" onClick={handleDuplicate} disabled={duplicateAgent.isPending}>
             <Copy size={14} className="mr-1.5" />
             {t('common.duplicate')}

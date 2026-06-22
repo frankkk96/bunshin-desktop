@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { ChevronRight, Info, Plus, X } from 'lucide-react'
 import { Button, Switch } from '@/components/ui'
+import { FieldRow } from './FieldRow'
+import { PERMISSION_MODES } from './AgentCreationModal'
 import { useUpdateAgent } from '@/hooks/agents'
 import { useT, type TKey } from '@/lib/i18n'
 import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
-import type { Agent, AgentConfig, EnvVar } from '@/lib/types'
+import type { Agent, AgentConfig, EnvVar, PermissionMode } from '@/lib/types'
 
 interface Props {
   agent: Agent
@@ -39,9 +41,9 @@ function fieldLabel(text: string, hint?: string) {
 }
 
 const inputCls =
-  'w-full h-8 px-3 text-sm rounded-md border bg-muted text-foreground placeholder:text-muted-foreground/60 outline-none border-border focus:ring-1 focus:ring-ring'
+  'w-full h-8 px-3 text-sm rounded-md border bg-transparent text-foreground placeholder:text-muted-foreground/60 outline-none border-border focus:ring-1 focus:ring-ring'
 const monoCls =
-  'w-full px-3 py-2 text-xs font-mono leading-relaxed rounded-md border bg-muted text-foreground placeholder:text-muted-foreground/60 outline-none resize-y'
+  'w-full px-3 py-2 text-xs font-mono leading-relaxed rounded-md border bg-transparent text-foreground placeholder:text-muted-foreground/60 outline-none resize-y'
 
 export function AgentConfigSection({ agent }: Props) {
   const updateAgent = useUpdateAgent()
@@ -60,6 +62,25 @@ export function AgentConfigSection({ agent }: Props) {
 
   const set = <K extends keyof AgentConfig>(key: K, value: AgentConfig[K]) =>
     setCfg((c) => ({ ...c, [key]: value }))
+
+  // Permission mode is a top-level agent field (not part of AgentConfig); persist it
+  // immediately on change rather than via the config Save button.
+  const handlePermissionChange = async (mode: PermissionMode) => {
+    try {
+      await updateAgent.mutateAsync({
+        id: agent.id,
+        alias: agent.alias,
+        description: agent.description,
+        avatar: agent.avatar,
+        baseUrl: agent.baseUrl,
+        cwd: agent.cwd,
+        permissionMode: mode,
+        config: agent.config,
+      })
+    } catch (err) {
+      toast.error(`Failed to set permission mode: ${err}`)
+    }
+  }
 
   // --- tools ---
   const disabled = cfg.disabledTools ?? []
@@ -123,7 +144,7 @@ export function AgentConfigSection({ agent }: Props) {
   }
 
   return (
-    <div className="mt-6">
+    <div>
       <div className="flex items-center justify-between mb-1">
         <button
           onClick={() => setShowAdvanced((s) => !s)}
@@ -144,13 +165,27 @@ export function AgentConfigSection({ agent }: Props) {
 
       {showAdvanced && (
         <div className="space-y-5 pt-3">
+          {/* Permission mode */}
+          <FieldRow label={t('agent.permission')}>
+            <select
+              value={agent.permissionMode}
+              onChange={(e) => handlePermissionChange(e.target.value as PermissionMode)}
+              className={inputCls}
+            >
+              {PERMISSION_MODES.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {t(m.key)}
+                </option>
+              ))}
+            </select>
+          </FieldRow>
+
           {/* Effort */}
-          <div>
-            {fieldLabel(t('cfg.effort'))}
+          <FieldRow label={t('cfg.effort')}>
             <select
               value={cfg.effort ?? ''}
               onChange={(e) => set('effort', e.target.value || undefined)}
-              className={cn(inputCls, 'w-40')}
+              className={inputCls}
             >
               <option value="">{t('common.default')}</option>
               {EFFORT_LEVELS.map((l) => (
@@ -159,7 +194,7 @@ export function AgentConfigSection({ agent }: Props) {
                 </option>
               ))}
             </select>
-          </div>
+          </FieldRow>
 
           {/* System prompt */}
           <div>
@@ -225,15 +260,14 @@ export function AgentConfigSection({ agent }: Props) {
           </div>
 
           {/* Fallback model */}
-          <div>
-            {fieldLabel(t('cfg.fallbackModel'), t('cfg.fallbackHint'))}
+          <FieldRow label={t('cfg.fallbackModel')} hint={t('cfg.fallbackHint')}>
             <input
               value={cfg.fallbackModel ?? ''}
               onChange={(e) => set('fallbackModel', e.target.value)}
               placeholder="sonnet,haiku"
               className={inputCls}
             />
-          </div>
+          </FieldRow>
 
           {/* Permissions */}
           <div>

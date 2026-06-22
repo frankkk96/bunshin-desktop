@@ -14,6 +14,8 @@ interface AgentsListProps {
   onCreate?: () => void
   /** Whether any agent exists (vs the list being empty due to search). */
   hasAnyAgent?: boolean
+  /** Narrow rail: render avatars only. */
+  collapsed?: boolean
 }
 
 export function AgentsList({
@@ -24,8 +26,40 @@ export function AgentsList({
   onEdit,
   onCreate,
   hasAnyAgent,
+  collapsed,
 }: AgentsListProps) {
   const t = useT()
+
+  if (collapsed) {
+    return (
+      <div className="flex flex-col items-center gap-1 px-2">
+        {agents.map((a) => {
+          const isSelected = selectedAgentId === a.id
+          const running = runningAgentIds.has(a.id)
+          return (
+            <button
+              key={a.id}
+              onClick={() => onSelect(a.id)}
+              title={a.alias}
+              className={cn(
+                'relative p-1 rounded-lg transition-colors',
+                isSelected ? 'bg-accent' : 'hover:bg-muted/40',
+              )}
+            >
+              <AgentAvatar agent={a} size={36} />
+              {running && (
+                <span
+                  title={t('agent.running')}
+                  className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-secondary"
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
   if (agents.length === 0) {
     if (hasAnyAgent) {
       return (

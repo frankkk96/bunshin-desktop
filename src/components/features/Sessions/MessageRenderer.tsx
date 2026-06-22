@@ -61,10 +61,10 @@ export function MessageRenderer({ message }: MessageRendererProps) {
 function UserBubble({ text, attachments }: { text: string; attachments: any[] }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[80%] bg-primary text-primary-foreground rounded-2xl px-4 py-2 whitespace-pre-wrap text-sm">
+      <div className="max-w-[80%] border border-border/60 bg-muted/50 text-foreground rounded-2xl px-4 py-2 whitespace-pre-wrap text-sm">
         {text}
         {attachments?.length > 0 && (
-          <div className="mt-2 text-xs opacity-80">
+          <div className="mt-2 text-xs text-muted-foreground">
             {attachments.length} attachment{attachments.length === 1 ? '' : 's'}
           </div>
         )}

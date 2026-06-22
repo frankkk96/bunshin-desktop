@@ -12,7 +12,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         className={cn(
           'w-full h-8 px-3 text-sm rounded-md border-[1px] outline-none',
-          'bg-muted text-foreground placeholder:text-muted-foreground',
+          'bg-transparent text-foreground placeholder:text-muted-foreground/60',
           error
             ? 'border-destructive focus:ring-1 focus:ring-destructive'
             : 'border-border focus:ring-1 focus:ring-ring',

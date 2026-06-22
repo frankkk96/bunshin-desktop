@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { IoAddOutline, IoChatbubblesOutline, IoSettingsOutline } from 'react-icons/io5'
-import { Download } from 'lucide-react'
+import { PanelLeft, PanelLeftClose } from 'lucide-react'
 import { getVersion } from '@tauri-apps/api/app'
 import { SidebarContainer } from '@/components/common'
 import { Button } from '@/components/ui'
@@ -29,6 +29,14 @@ export function SessionsView() {
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar.collapsed') === '1')
+
+  const toggleCollapsed = () =>
+    setCollapsed((v) => {
+      const next = !v
+      localStorage.setItem('sidebar.collapsed', next ? '1' : '0')
+      return next
+    })
 
   const selected = sessionId ? sessions.find((s) => s.id === sessionId) : null
   const selectedAgentId = selected?.agentId
@@ -81,6 +89,7 @@ export function SessionsView() {
   return (
     <div className="flex h-full">
       <SidebarContainer
+        collapsed={collapsed}
         searchPlaceholder={t('ui.searchAgents')}
         searchValue={search}
         onSearchChange={setSearch}
@@ -90,7 +99,7 @@ export function SessionsView() {
           tooltip: t('agent.newAgent'),
           onClick: () => setCreating(true),
         }}
-        footer={<SidebarFooter />}
+        footer={<SidebarFooter collapsed={collapsed} onToggle={toggleCollapsed} />}
       >
         <AgentsList
           agents={filtered}
@@ -100,6 +109,7 @@ export function SessionsView() {
           onEdit={setEditingAgent}
           onCreate={() => setCreating(true)}
           hasAnyAgent={agents.length > 0}
+          collapsed={collapsed}
         />
       </SidebarContainer>
 
@@ -137,7 +147,13 @@ export function SessionsView() {
   )
 }
 
-function SidebarFooter() {
+function SidebarFooter({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean
+  onToggle: () => void
+}) {
   const { updateAvailable, hasUpdate } = useUpdater()
   const t = useT()
   const [version, setVersion] = useState('')
@@ -149,42 +165,62 @@ function SidebarFooter() {
       .catch(() => {})
   }, [])
 
+  const settingsBtn = (
+    <button
+      onClick={() => openSettingsWindow('agents')}
+      title={t('ui.settings')}
+      aria-label={t('ui.settings')}
+      className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+    >
+      <IoSettingsOutline size={16} />
+    </button>
+  )
+
+  const toggleBtn = (
+    <button
+      onClick={onToggle}
+      title={collapsed ? t('ui.expandSidebar') : t('ui.collapseSidebar')}
+      aria-label={collapsed ? t('ui.expandSidebar') : t('ui.collapseSidebar')}
+      className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+    >
+      {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
+    </button>
+  )
+
+  if (collapsed) {
+    return (
+      <div className="flex items-center justify-center gap-1">
+        {settingsBtn}
+        {toggleBtn}
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-center justify-between gap-1">
-      <button
-        onClick={() => openSettingsWindow('agents')}
-        title={t('ui.settings')}
-        aria-label={t('ui.settings')}
-        className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-      >
-        <IoSettingsOutline size={16} />
-      </button>
+      {settingsBtn}
 
-      <div className="flex items-center gap-2 pr-1 select-none">
-        <img
-          src="/app-icon.png"
-          alt=""
-          className="w-7 h-7 rounded-[7px] opacity-90 pointer-events-none"
-          draggable={false}
-        />
-        <div className="flex flex-col items-end leading-tight">
-          <span className="text-[11px] font-semibold text-muted-foreground">Bunshin</span>
+      <div className="flex items-center gap-1">
+        <span className="select-none text-[11px] tabular-nums">
           {hasUpdate && updateAvailable ? (
             <>
               <button
                 onClick={() => setShowDialog(true)}
-                className="flex items-center gap-1 text-[11px] font-medium text-interactive hover:underline"
-                title={`Update available: v${updateAvailable.version}`}
+                className="text-interactive hover:underline"
               >
-                <Download size={11} />
-                {t('ui.update')}
+                {t('ui.update')} v{updateAvailable.version}
               </button>
-              <UpdateDialog open={showDialog} onOpenChange={setShowDialog} update={updateAvailable} />
+              <UpdateDialog
+                open={showDialog}
+                onOpenChange={setShowDialog}
+                update={updateAvailable}
+              />
             </>
           ) : (
-            version && <span className="text-[10px] text-muted-foreground/50">v{version}</span>
+            version && <span className="text-muted-foreground/50">v{version}</span>
           )}
-        </div>
+        </span>
+        {toggleBtn}
       </div>
     </div>
   )

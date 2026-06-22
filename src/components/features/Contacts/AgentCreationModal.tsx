@@ -1,21 +1,37 @@
 import { useState } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { ChevronRight, ExternalLink, FolderOpen } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import {
   Button,
   Input,
-  Label,
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui'
+import { FieldRow, SectionHeader } from './FieldRow'
 import { useCreateAgent } from '@/hooks/agents'
 import { pickDirectory } from '@/lib/tauri/service/sessions'
 import { useT, type TKey } from '@/lib/i18n'
 import { toast } from '@/lib/core/utils/toast'
+import { cn } from '@/lib/ui/utils'
 import type { Agent, PermissionMode } from '@/lib/types'
+
+/** A compact icon button to open the directory picker. */
+export function DirPickerButton({ onClick, title }: { onClick: () => void; title: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+    >
+      <FolderOpen size={15} />
+    </button>
+  )
+}
 
 export const PROVIDER_GUIDE_URL = 'https://bunshin.app/guide/providers'
 
@@ -42,7 +58,7 @@ export const PERMISSION_MODES: { value: PermissionMode; key: TKey }[] = [
 ]
 
 const inputCls =
-  'w-full h-8 px-3 text-sm rounded-md border bg-muted text-foreground placeholder:text-muted-foreground/60 outline-none border-border focus:ring-1 focus:ring-ring'
+  'w-full h-8 px-3 text-sm rounded-md border bg-transparent text-foreground placeholder:text-muted-foreground/60 outline-none border-border focus:ring-1 focus:ring-ring'
 
 interface AgentCreationModalProps {
   onClose: () => void
@@ -59,6 +75,7 @@ export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalPro
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState('')
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default')
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const handlePickDir = async () => {
     const picked = await pickDirectory('Pick working directory')
@@ -92,75 +109,91 @@ export function AgentCreationModal({ onClose, onCreated }: AgentCreationModalPro
       <SheetHeader>
         <SheetTitle>{t('agent.new')}</SheetTitle>
         <SheetDescription>{t('agent.newDesc')}</SheetDescription>
-        <div className="mt-1.5">
-          <ProviderGuideLink t={t} />
-        </div>
       </SheetHeader>
-      <SheetContent className="px-6 py-5">
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>{t('agent.name')}</Label>
-            <Input
-              autoFocus
-              value={alias}
-              onChange={(e) => setAlias(e.target.value)}
-              placeholder={t('agent.namePlaceholder')}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{t('agent.cwd')}</Label>
-            <div className="flex gap-2">
+      <SheetContent className="px-6 py-5 space-y-6">
+        {/* Basics: name · workspace */}
+        <div>
+          <SectionHeader title={t('agent.secBasics')} />
+          <div className="space-y-3">
+            <FieldRow label={t('agent.name')}>
               <Input
-                value={cwd}
-                onChange={(e) => setCwd(e.target.value)}
-                placeholder="/path/to/project"
+                autoFocus
+                value={alias}
+                onChange={(e) => setAlias(e.target.value)}
+                placeholder={t('agent.namePlaceholder')}
               />
-              <Button variant="outline" onClick={handlePickDir} className="flex-shrink-0">
-                {t('common.browse')}
-              </Button>
-            </div>
+            </FieldRow>
+            <FieldRow label={t('agent.cwd')}>
+              <div className="flex gap-2">
+                <Input
+                  value={cwd}
+                  onChange={(e) => setCwd(e.target.value)}
+                  placeholder="/path/to/project"
+                  className="font-mono text-xs"
+                />
+                <DirPickerButton onClick={handlePickDir} title={t('common.browse')} />
+              </div>
+            </FieldRow>
           </div>
+        </div>
 
-          <div className="space-y-1.5">
-            <Label>{t('agent.baseUrl')}</Label>
+        {/* Provider: base URL · API key · model */}
+        <div>
+          <SectionHeader title={t('agent.secProvider')} right={<ProviderGuideLink t={t} />} />
+          <div className="space-y-3">
+          <FieldRow label={t('agent.baseUrl')}>
             <Input
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
               placeholder="https://api.anthropic.com"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{t('agent.apiKey')}</Label>
+          </FieldRow>
+          <FieldRow label={t('agent.apiKey')}>
             <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-…" />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{t('agent.model')}</Label>
+          </FieldRow>
+          <FieldRow label={t('agent.model')}>
             <Input
               value={model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="claude-opus-4-8"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{t('agent.permission')}</Label>
-            <select
-              value={permissionMode}
-              onChange={(e) => setPermissionMode(e.target.value as PermissionMode)}
-              className={inputCls}
-            >
-              {PERMISSION_MODES.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {t(m.key)}
-                </option>
-              ))}
-            </select>
+          </FieldRow>
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-6">
+
+        {/* Advanced: permission mode */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((s) => !s)}
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronRight
+              size={14}
+              className={cn('transition-transform', showAdvanced && 'rotate-90')}
+            />
+            {t('cfg.advanced')}
+          </button>
+
+          {showAdvanced && (
+            <div className="pt-3">
+              <FieldRow label={t('agent.permission')}>
+                <select
+                  value={permissionMode}
+                  onChange={(e) => setPermissionMode(e.target.value as PermissionMode)}
+                  className={inputCls}
+                >
+                  {PERMISSION_MODES.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {t(m.key)}
+                    </option>
+                  ))}
+                </select>
+              </FieldRow>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={onClose}>
             {t('common.cancel')}
           </Button>

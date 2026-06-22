@@ -9,7 +9,18 @@ import {
   TooltipTrigger,
 } from '@/components/ui'
 import { cn } from '@/lib/ui/utils'
-import { useT } from '@/lib/i18n'
+import { useT, type TKey } from '@/lib/i18n'
+
+/** Example prompts shown as the composer placeholder — one is picked at random per chat. */
+const EXAMPLE_PROMPTS: TKey[] = [
+  'composer.eg.tidyFiles',
+  'composer.eg.explainCode',
+  'composer.eg.findBug',
+  'composer.eg.writeTests',
+  'composer.eg.summarize',
+  'composer.eg.rename',
+  'composer.eg.draftReadme',
+]
 
 interface ComposerProps {
   disabled?: boolean
@@ -42,6 +53,9 @@ export function Composer({
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<PickedAttachment[]>([])
   const [busy, setBusy] = useState(false)
+  const [placeholderKey] = useState(
+    () => EXAMPLE_PROMPTS[Math.floor(Math.random() * EXAMPLE_PROMPTS.length)],
+  )
 
   const ready = (text.trim().length > 0 || attachments.length > 0) && !disabled && !busy
 
@@ -87,11 +101,14 @@ export function Composer({
   }
 
   return (
-    <div className="p-3 px-4 relative bg-background">
+    <div className="p-5 relative bg-background">
       <div className="flex justify-center">
         <div
           className={cn(
-            'relative rounded-xl border p-3 min-h-[80px] w-full bg-input border-border',
+            'relative rounded-2xl border p-3 min-h-[64px] w-full bg-background border-border',
+            'shadow-[0_2px_8px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.45)]',
+            'transition-shadow',
+            'focus-within:shadow-[0_6px_24px_rgba(0,0,0,0.12)] dark:focus-within:shadow-[0_8px_28px_rgba(0,0,0,0.6)]',
             disabled && 'opacity-60',
           )}
         >
@@ -120,9 +137,7 @@ export function Composer({
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKey}
             placeholder={
-              disabled
-                ? disabledHint ?? t('composer.notRunning')
-                : t('composer.placeholder')
+              disabled ? disabledHint ?? t('composer.notRunning') : t(placeholderKey)
             }
             rows={2}
             disabled={disabled || busy}

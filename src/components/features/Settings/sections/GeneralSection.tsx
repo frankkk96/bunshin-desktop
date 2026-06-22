@@ -23,8 +23,6 @@ import { Theme, useAppSettingsQuery } from '@/hooks/settings/query'
 import { useSettingsMutations, useSettingsChangeListener } from '@/hooks/settings/mutations'
 import { useProxy } from '@/components/features/Settings/hooks/useProxy'
 import { app } from '@/lib/tauri/system/app'
-import { testCrashAndSubmit } from '@/lib/core/utils/crash'
-import { toast } from '@/lib/core/utils/toast'
 import { cn } from '@/lib/ui/utils'
 import { useT } from '@/lib/i18n'
 import { SettingSelect } from '../components/SettingSelect'
@@ -53,27 +51,12 @@ export function GeneralSection() {
   const [isExporting, setIsExporting] = useState(false)
   const [dataManagementError, setDataManagementError] = useState<string | null>(null)
   const [dataManagementSuccess, setDataManagementSuccess] = useState<string | null>(null)
-  const [isTestingCrash, setIsTestingCrash] = useState(false)
 
   const handleFeedbackClick = async () => {
     try {
       await openUrl('https://github.com/frankkk96/Bunshin-Release/issues')
     } catch (error) {
       console.error('Failed to open feedback URL:', error)
-    }
-  }
-
-  const handleTestCrashClick = async () => {
-    try {
-      setIsTestingCrash(true)
-      toast.info('Triggering test crash and reading logs...')
-      await testCrashAndSubmit('https://server.bunshin.app/telemetry/crash-reports')
-      toast.success('Crash report submitted successfully!')
-    } catch (error) {
-      console.error('Test crash failed:', error)
-      toast.error('Test failed: ' + (error as Error).message)
-    } finally {
-      setIsTestingCrash(false)
     }
   }
 
@@ -296,35 +279,6 @@ export function GeneralSection() {
             {t('set.open')}
           </Button>
         </SettingRow>
-
-        {import.meta.env.DEV && (
-          <>
-            <SettingDivider />
-            <SettingRow
-              icon={<Bug className="w-4 h-4" />}
-              title="Test Crash & Logs"
-              description="Triggers a test crash report (dev only)"
-            >
-              <Button
-                onClick={handleTestCrashClick}
-                disabled={isTestingCrash}
-                variant="outline"
-              >
-                {isTestingCrash ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    Testing…
-                  </>
-                ) : (
-                  <>
-                    <Bug className="w-3.5 h-3.5 mr-1.5" />
-                    Trigger
-                  </>
-                )}
-              </Button>
-            </SettingRow>
-          </>
-        )}
       </SettingSection>
     </div>
   )

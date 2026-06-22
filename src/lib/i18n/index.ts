@@ -17,12 +17,14 @@ const DICT: Record<string, { en: string; zh: string }> = {
   'common.off': { en: 'Off', zh: '关闭' },
 
   // agent editor / creation
+  'agent.secBasics': { en: 'Basics', zh: '基础信息' },
+  'agent.secProvider': { en: 'Provider', zh: '模型服务' },
   'agent.name': { en: 'Name', zh: '名称' },
   'agent.namePlaceholder': { en: 'e.g. Codey', zh: '例如 Codey' },
   'agent.baseUrl': { en: 'Base URL', zh: 'Base URL' },
   'agent.apiKey': { en: 'API Key', zh: 'API Key' },
   'agent.model': { en: 'Model', zh: 'Model' },
-  'agent.cwd': { en: 'Working directory', zh: '工作目录' },
+  'agent.cwd': { en: 'Workspace', zh: '工作区' },
   'agent.permission': { en: 'Permission mode', zh: '权限模式' },
   'common.browse': { en: 'Browse…', zh: '选择…' },
   'agent.new': { en: 'New agent', zh: '新建 Agent' },
@@ -115,6 +117,9 @@ const DICT: Record<string, { en: string; zh: string }> = {
   'ui.searchAgents': { en: 'Search agents', zh: '搜索 Agent' },
   'ui.settings': { en: 'Settings', zh: '设置' },
   'ui.update': { en: 'Update', zh: '更新' },
+  'ui.upToDate': { en: 'Up to date', zh: '已是最新' },
+  'ui.collapseSidebar': { en: 'Collapse sidebar', zh: '收起侧边栏' },
+  'ui.expandSidebar': { en: 'Expand sidebar', zh: '展开侧边栏' },
   'agent.noMatch': { en: 'No matching agents.', zh: '没有匹配的 Agent。' },
   'agent.noneChat': {
     en: 'No agents yet. Create one to start chatting.',
@@ -132,7 +137,6 @@ const DICT: Record<string, { en: string; zh: string }> = {
   },
   'agent.editTooltip': { en: 'Edit agent', zh: '编辑 Agent' },
   'agent.running': { en: 'Running', zh: '运行中' },
-  'agent.changeAvatar': { en: 'Click to change avatar', zh: '点击更换头像' },
   'agent.allRequired': {
     en: 'Name, working directory, Base URL, API Key and Model are all required.',
     zh: '名称、工作目录、Base URL、API Key、Model 均为必填。',
@@ -167,6 +171,19 @@ const DICT: Record<string, { en: string; zh: string }> = {
 
   // composer
   'composer.placeholder': { en: 'Ask me anything...', zh: '问我任何问题…' },
+  'composer.eg.tidyFiles': {
+    en: 'Tidy up the files in this folder…',
+    zh: '帮我整理一下这个文件夹…',
+  },
+  'composer.eg.explainCode': {
+    en: 'Explain what this code does…',
+    zh: '解释一下这段代码是做什么的…',
+  },
+  'composer.eg.findBug': { en: 'Help me track down this bug…', zh: '帮我找找这个 bug 在哪…' },
+  'composer.eg.writeTests': { en: 'Write some tests for this module…', zh: '给这个模块写点测试…' },
+  'composer.eg.summarize': { en: 'Summarize the recent changes…', zh: '总结一下最近的改动…' },
+  'composer.eg.rename': { en: 'Batch-rename these files…', zh: '把这些文件批量重命名…' },
+  'composer.eg.draftReadme': { en: 'Draft a README for this project…', zh: '帮这个项目写个 README…' },
   'composer.notRunning': { en: 'Subprocess not running…', zh: '子进程未运行…' },
   'composer.resolvePermission': {
     en: 'Resolve the permission prompt above to continue',

@@ -24,7 +24,7 @@ export function SettingRow({
   return (
     <div
       className={cn(
-        'flex items-center justify-between py-1.5 px-4 rounded-md',
+        'flex items-center justify-between min-h-11 py-1.5 px-4 rounded-md',
         onClick && 'cursor-pointer hover:bg-accent',
         className,
       )}

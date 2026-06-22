@@ -42,6 +42,12 @@ interface SidebarContainerProps {
 
   // Pinned footer (e.g. settings entry) rendered below the scroll area
   footer?: React.ReactNode
+
+  // When true, the sidebar renders in a narrow icon-only (avatar) rail and the
+  // width animates between the two states.
+  collapsed?: boolean
+  /** Width of the collapsed rail (avatar + padding). */
+  collapsedWidth?: string
 }
 
 export function SidebarContainer({
@@ -60,20 +66,46 @@ export function SidebarContainer({
   actionButton,
   inlineAction,
   footer,
+  collapsed = false,
+  collapsedWidth = '80px',
 }: SidebarContainerProps) {
   // Use searchQuery if provided, otherwise use searchValue
   const currentSearchValue = searchQuery || searchValue || ''
 
   return (
     <div
-      className={cn('h-full border-r border-border bg-secondary overflow-x-hidden flex flex-col')}
+      className={cn(
+        'h-full border-r border-border bg-secondary overflow-hidden flex flex-col',
+        'transition-[width] duration-200 ease-in-out',
+      )}
       style={{
-        width,
+        width: collapsed ? collapsedWidth : width,
       }}
     >
-      {/* Header — extra top padding clears the macOS traffic lights now that this
-          is the left-most pane (no icon rail). */}
-      <div data-tauri-drag-region className="px-3 pb-3 pt-9 select-none">
+      {/* Collapsed: just a top spacer (clears traffic lights) + a centered new button. */}
+      {collapsed ? (
+        <div data-tauri-drag-region className="px-2 pb-3 pt-9 select-none flex justify-center">
+          {inlineAction && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={inlineAction.onClick}
+                  variant="outline"
+                  className="h-8 w-8 p-0 flex-shrink-0"
+                >
+                  <inlineAction.icon size={16} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={5}>
+                {inlineAction.tooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      ) : (
+        /* Header — extra top padding clears the macOS traffic lights now that this
+           is the left-most pane (no icon rail). */
+        <div data-tauri-drag-region className="px-3 pb-3 pt-9 select-none">
         <div
           data-tauri-drag-region
           className={cn(
@@ -144,7 +176,7 @@ export function SidebarContainer({
                 placeholder={searchPlaceholder}
                 value={currentSearchValue}
                 onChange={(e) => onSearchChange?.(e.target.value)}
-                className="bg-muted w-full h-8 pl-8 pr-2.5 border-[1px] rounded-md text-xs outline-none text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-ring border-border"
+                className="bg-background dark:bg-muted shadow-sm dark:shadow-none w-full h-8 pl-8 pr-2.5 border-[1px] rounded-md text-xs outline-none text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-ring border-border"
               />
             </div>
             {inlineAction && (
@@ -165,10 +197,11 @@ export function SidebarContainer({
             )}
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Content Area */}
-      <div className="flex-1 overflow-x-hidden">
+      <div className="flex-1 overflow-x-hidden overflow-y-auto">
         {isLoading ? <div className="p-4 text-muted-foreground">Loading...</div> : children}
       </div>
 
